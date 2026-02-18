@@ -45,7 +45,7 @@ block content
             th الإجراءات
         tbody
           if orders && orders.length > 0
-            - var limitedOrders = orders.slice(0, 5)
+            - var limitedOrders = orders
             each order, index in limitedOrders
               tr
                 td #{index + 1}
@@ -81,7 +81,7 @@ block content
             th الإجراءات
         tbody
           if meals && meals.length > 0
-            - var limitedMeals = meals.slice(0, 10)
+            - var limitedMeals = meals
             each meal in limitedMeals
               tr(data-meal=JSON.stringify(meal))
                 td
@@ -100,9 +100,6 @@ block content
             tr
               td(colspan="6").no-data لا توجد منتجات حالياً
 
-      if meals && meals.length > 10
-        .view-more
-          a.btn-secondary(href="/admin/meals") عرض جميع المنتجات (#{meals.length})
 
     // ===== Offers Section =====
     .dashboard-section
@@ -121,7 +118,7 @@ block content
             th الإجراءات
         tbody
           if offers && offers.length > 0
-            - var limitedOffers = offers.slice(0, 10)
+            - var limitedOffers = offers
             each offer in limitedOffers
               tr(data-offer=JSON.stringify(offer))
                 td
