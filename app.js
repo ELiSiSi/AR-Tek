@@ -120,6 +120,7 @@ app.all('*', (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
 });
 
+app.use(globalErrorHandler);
 // Global error handler (في الآخر!)
 app.use((err, req, res, next) => {
   err.statusCode = err.statusCode || 500;
@@ -155,13 +156,13 @@ process.on('uncaughtException', (err) => {
 //-----------------------------------------------------------------------------------------
 mongoose
   .connect(MONGO_URI)
-  .then(() => {
-    console.log('✅ Connected to MongoDB');
+  .then(() => console.log('✅ Connected to MongoDB'))
+  .catch(err => console.error('❌ MongoDB Error:', err));
 
-    app.listen(port, () => {
-      console.log(`🚀 App listening at http://localhost:${port}`);
-    });
-  })
-  .catch((err) => console.error('❌ MongoDB Error:', err));
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(port, () => {
+    console.log(`🚀 App listening at http://localhost:${port}`);
+  });
+}
 
 export default app;
