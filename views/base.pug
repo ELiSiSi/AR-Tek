@@ -7,31 +7,32 @@ html(lang="ar" dir="rtl")
     meta(http-equiv="X-UA-Compatible" content="IE=edge")
 
     //- SEO Meta Tags
-    title= pageTitle || 'شواية - أفضل مشويات وكفتة في مصر'
-    meta(name="description" content=pageDescription || 'شواية - مطعم متخصص في الكفتة والمشويات المصرية الأصيلة. اطلب الآن أونلاين كفتة مشوية، ريش، كباب، طاووق، وكل أنواع المشويات. توصيل سريع في العزازية ومصر.')
-    meta(name="keywords" content="شواية، مشويات، كفتة، كفتة مشوية، كباب، ريش، طاووق، شيش طاووق، فراخ مشوية، لحم مشوي، مطعم مصري، طلبات أونلاين، توصيل طعام، العزازية، مصر، لحوم مشوية، وجبات سريعة")
-    meta(name="author" content="شواية")
+    title= pageTitle || 'AR Tek | تقنية بلا حدود'
+    meta(name="description" content=pageDescription || 'AR Tek - متخصصون في أحدث الإلكترونيات الشخصية: سماعات، ساعات ذكية، ماكينات حلاقة وتصفيف. اختبر التقنية من منظور مختلف.')
+    meta(name="keywords" content="AR Tek, إلكترونيات, سماعات, ساعات ذكية, ماكينة حلاقة, تصفيف الشعر, إكسسوارات تقنية, شالش, مصر, electronics, smartwatch, headphones, grooming")
+    meta(name="author" content="AR Tek")
     meta(name="robots" content="index, follow")
-    meta(name="language" content="Arabic")
+    meta(name="language" content="ar, en")
     meta(name="revisit-after" content="7 days")
+    meta(name="theme-color" content="#1A6886")
 
-    //- Open Graph Meta Tags (Facebook, LinkedIn)
+    //- Open Graph Meta Tags
     meta(property="og:type" content="website")
-    meta(property="og:title" content=pageTitle || 'شواية | أفضل مشويات وكفتة في مصر')
-    meta(property="og:description" content=pageDescription || 'مطعم متخصص في الكفتة والمشويات المصرية الأصيلة. اطلب الآن!')
+    meta(property="og:title" content=pageTitle || 'AR Tek | تقنية بلا حدود')
+    meta(property="og:description" content=pageDescription || 'إلكترونيات شخصية بمستوى عالمي. اكتشف الآن.')
     meta(property="og:image" content="/img/logo.png")
-    meta(property="og:url" content="https://yourdomain.com")
-    meta(property="og:site_name" content="شواية")
+    meta(property="og:url" content="https://artek.com")
+    meta(property="og:site_name" content="AR Tek")
     meta(property="og:locale" content="ar_EG")
 
-    //- Twitter Card Meta Tags
+    //- Twitter Card
     meta(name="twitter:card" content="summary_large_image")
-    meta(name="twitter:title" content=pageTitle || 'شواية - أفضل مشويات في مصر')
-    meta(name="twitter:description" content=pageDescription || 'أفضل كفتة ومشويات في مصر')
+    meta(name="twitter:title" content=pageTitle || 'AR Tek - تقنية بلا حدود')
+    meta(name="twitter:description" content=pageDescription || 'إلكترونيات شخصية بمستوى عالمي')
     meta(name="twitter:image" content="/img/logo.png")
 
     //- Canonical URL
-    link(rel="canonical" href=canonicalUrl || 'https://yourdomain.com')
+    link(rel="canonical" href=canonicalUrl || 'https://artek.com')
 
     //- Favicon
     link(rel="icon" type="image/png" href="/img/logo.png")
@@ -40,118 +41,151 @@ html(lang="ar" dir="rtl")
     //- Stylesheets
     link(rel="stylesheet" href="/css/style.css")
 
-    //- Preconnect for Performance
+    //- Google Fonts
     link(rel="preconnect" href="https://fonts.googleapis.com")
     link(rel="preconnect" href="https://fonts.gstatic.com" crossorigin)
+    link(rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Cairo:wght@300;400;600;700;900&family=Barlow+Condensed:wght@400;600;700;800&display=swap")
 
-    //- Schema.org Structured Data (JSON-LD)
+    //- Schema.org Structured Data
     script(type="application/ld+json").
       {
         "@context": "https://schema.org",
-        "@type": "Restaurant",
-        "name": "شواية",
+        "@type": "Store",
+        "name": "AR Tek",
         "image": "/img/logo.png",
-        "description": "مطعم متخصص في الكفتة والمشويات المصرية الأصيلة",
+        "description": "متخصصون في أحدث الإلكترونيات الشخصية والإكسسوارات التقنية",
         "address": {
           "@type": "PostalAddress",
-          "streetAddress": "العزازية",
-          "addressLocality": "العزازية",
           "addressCountry": "EG"
         },
-        "telephone": "+20 123 456 7890",
-        "email": "ramym4665@gmail.com",
-        "servesCuisine": "مصري، مشويات، كفتة، كباب",
-        "priceRange": "$$",
-        "url": "https://yourdomain.com",
+        "email": "info@artek.com",
+        "hasOfferCatalog": {
+          "@type": "OfferCatalog",
+          "name": "منتجات AR Tek",
+          "itemListElement": [
+            { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "سماعات" } },
+            { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "ساعات ذكية" } },
+            { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "أجهزة حلاقة وتصفيف" } }
+          ]
+        },
+        "url": "https://artek.com",
         "sameAs": [
-          "https://facebook.com/shawaya",
-          "https://instagram.com/shawaya"
-        ],
-        "openingHoursSpecification": [
-          {
-            "@type": "OpeningHoursSpecification",
-            "dayOfWeek": [
-              "Monday",
-              "Tuesday",
-              "Wednesday",
-              "Thursday",
-              "Friday",
-              "Saturday",
-              "Sunday"
-            ],
-            "opens": "10:00",
-            "closes": "23:00"
-          }
+          "https://facebook.com/artek",
+          "https://instagram.com/artek"
         ]
       }
 
   body
-    //- Header with Semantic HTML
+    //- Cursor follower
+    .cursor-dot(aria-hidden="true")
+    .cursor-outline(aria-hidden="true")
+
+    //- Noise overlay
+    .noise-overlay(aria-hidden="true")
+
+    //- Header
     header.header(role="banner")
       .container
         .nav-wrapper
-          .logo(itemscope itemtype="https://schema.org/Organization")
-            a(href="/" itemprop="url")
-              img(src="/img/logo.png" alt="شواية - أفضل مشويات وكفتة في مصر" itemprop="logo" width="120" height="120")
-            .logo-text
-              p(itemprop="slogan") أحلى كفتة ومشويات على الفحم
 
-          nav.nav(role="navigation" aria-label="القائمة الرئيسية")
-            a(href="/" class=(title === 'Home' ? 'active' : '') aria-label="الصفحة الرئيسية") الرئيسية
-            a(href="/menu" class=(title === 'Menu' ? 'active' : '') aria-label="قائمة الطعام") المنيو
-            a(href="/offers" class=(title === 'Offers' ? 'active' : '') aria-label="العروض الخاصة") العروض
-            a.cart-link(href="/cart" class=(title === 'Cart' ? 'active' : '') aria-label="سلة التسوق")
-              svg(width="24" height="24" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true")
-                circle(cx="9" cy="21" r="1")
-                circle(cx="20" cy="21" r="1")
-                path(d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6")
+          .logo(itemscope itemtype="https://schema.org/Organization")
+            a(href="/" itemprop="url" aria-label="AR Tek - Home")
+              .logo-mark
+                span.logo-tek TEK
+                span.logo-ar AR
+              .logo-line(aria-hidden="true")
+              .logo-img
+                img(src="/img/logo.png" alt="AR Tek Logo" itemprop="logo" width="50" height="40")
+
+          nav.nav(role="navigation" aria-label="القائمة الرئيسية / Main Navigation")
+            a(href="/" class=(title === 'Home' ? 'active' : ''))
+              span.nav-ar الرئيسية
+              span.nav-en Home
+            a(href="/products" class=(title === 'Products' ? 'active' : ''))
+              span.nav-ar المنتجات
+              span.nav-en Products
+            a(href="/offers" class=(title === 'Offers' ? 'active' : ''))
+              span.nav-ar العروض
+              span.nav-en Offers
+
+
+          .nav-actions
+            a.cart-link(href="/cart" class=(title === 'Cart' ? 'active' : '') aria-label="سلة التسوق / Cart")
+              svg(width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true")
+                path(d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z")
+                line(x1="3" y1="6" x2="21" y2="6")
+                path(d="M16 10a4 4 0 01-8 0")
               span.cart-count(aria-live="polite") 0
+            button.menu-toggle(aria-label="القائمة / Menu" aria-expanded="false")
+              span
+              span
+              span
 
     //- Main Content
     main.main-content(role="main")
       block content
 
-    //- Footer with Semantic HTML
-    footer.footer(role="contentinfo" itemscope itemtype="https://schema.org/Restaurant")
+    //- Footer
+    footer.footer(role="contentinfo" itemscope itemtype="https://schema.org/Organization")
+      .footer-glow(aria-hidden="true")
       .container
-        .footer-content
-          .footer-logo
-            img(src="/img/logo.png" alt="شواية" itemprop="logo" width="100" height="100")
-            p(itemprop="description") أحلى كفتة ومشويات على الفحم
+        .footer-top
+          .footer-brand
+            .footer-logo-mark
+              span.logo-tek TEK
+              span.logo-ar AR
+            p.footer-tagline
+              span تقنية بلا حدود
+              span.en Technology Without Limits
 
-          .footer-links
-            h4 روابط سريعة
-            nav(aria-label="روابط الفوتر")
-              a(href="/" aria-label="الرئيسية") الرئيسية
-              a(href="/menu" aria-label="المنيو") المنيو
-              a(href="/offers" aria-label="العروض") العروض
-              a(href="/cart" aria-label="السلة") السلة
-              a(href="/review" aria-label="التقييم") التقييم
+          .footer-grid
+            .footer-col
+              h4
+                span روابط سريعة
+                span.en Quick Links
+              nav(aria-label="روابط الفوتر")
+                a(href="/") الرئيسية / Home
+                a(href="/products") المنتجات / Products
+                if typeof offers !== 'undefined' && offers.length > 0
+                  a(href="/offers") العروض / Offers
+                a(href="/cart") السلة / Cart
 
-          .footer-contact
-            h4 تواصل معنا
-
-            p(itemprop="telephone")
-              a(href="tel:01515578224" aria-label="اتصل بنا") 📞 015 1557 8224
-
-            p(itemprop="telephone")
-              a(href="tel:01515578207" aria-label="اتصل بنا") 📞 015 1557 8207
-
-            p(itemprop="email")
-              a(href="mailto:ramym4665@gmail.com" aria-label="راسلنا عبر البريد") 📧 ramym4665@gmail.com
-
-
-            p
-              a(href="https://maps.app.goo.gl/SAjWdmUcT9bEfqQRA" target="_blank" rel="noopener noreferrer" itemprop="sameAs" aria-label="     ") 📍 اللوكيشن > >  العزازية
-
-            //- p
-            //-   a(href="https://facebook.com/shawaya" target="_blank" rel="noopener noreferrer" itemprop="sameAs" aria-label="تابعنا على فيسبوك") فيسبوك
-
-            //- p
-            //-   a(href="https://instagram.com/shawaya" target="_blank" rel="noopener noreferrer" itemprop="sameAs" aria-label="تابعنا على إنستجرام") إنستجرام
+            .footer-col
+              h4
+                span الفئات
+                span.en Categories
+              nav(aria-label="فئات المنتجات")
+                if typeof products !== 'undefined' && products.length
+                  - const categories = [...new Set(products.map(p => p.category))]
+                  each cat in categories
+                    p.footer-link #{cat}
+                else
+                  p.footer-link لا توجد فئات
+            .footer-col
+              h4
+                span تواصل معنا
+                span.en Contact Us
+              .footer-contact-items
+                a(href="tel:+201234567890" aria-label="اتصل بنا")
+                  .contact-icon ☎
+                  .contact-text
+                    span 01063 777 925
+                //- a(href="mailto:info@artek.com" aria-label="راسلنا")
+                //-   .contact-icon @
+                //-   .contact-text
+                //-     span info@artek.com
+                //- a(href="https://instagram.com/artek" target="_blank" rel="noopener noreferrer")
+                //-   .contact-icon ◈
+                //-   .contact-text
+                //-     span @artek.official
+                //- a(href="https://facebook.com/artek" target="_blank" rel="noopener noreferrer")
+                //-   .contact-icon ◉
+                //-   .contact-text
+                //-     span AR Tek Official
 
         .footer-bottom
-          p © 2026 شواية. جميع الحقوق محفوظة.
+          p © 2026 AR Tek. All rights reserved. | جميع الحقوق محفوظة.
+          .footer-badge EGYPT · EST. 2024
 
     //- Scripts
     script(src="/js/script.js" defer)

@@ -2,14 +2,16 @@ extends base
 
 block content
   // Loading Spinner
-  #loadingSpinner.loading-spinner
+  #loadingSpinner.loading-spinner(style="display:none")
     .spinner
 
   // Page Header
-  section.page-header
+  section.page-header.cart-page-header
     .container
-      h1 🛒 سلة التسوق
-      p راجع طلبك قبل الإتمام 
+      .cart-page-head
+        span.section-label AR TEK · Cart
+        h1.section-title سلة التسوق
+        p.section-subtitle راجع طلبك قبل الإتمام
 
   // Cart Section
   section.cart-section
@@ -25,72 +27,540 @@ block content
 
         // Cart Content
         #cartContent.cart-content(style="display:none")
-          form#cartForm
+          .cart-layout
+            form#cartForm.cart-form
+              // Cart Items
+              #cartItems.cart-items
+                // يتم الإضافة بالـ JS
 
-            // Cart Items
-            #cartItems.cart-items
-              // يتم الإضافة بالـ JS
+              // Cart Summary
+              .cart-summary
+                h3.summary-title ملخص الطلب
 
-            // Cart Summary
-            .cart-summary
-              .summary-row
-                span المجموع الفرعي:
-                span#subtotal 0 جنيه
+                .summary-row
+                  span عدد المنتجات
+                  span#itemsCount 0
 
-              .summary-divider
+                .summary-row
+                  span المجموع الفرعي
+                  span#subtotal 0 جنيه
 
-              .summary-row.total
-                span المجموع الإجمالي:
-                span#total 0 جنيه
+                .summary-divider
 
-              // Customer Info
-              .customer-info(style="margin-top:25px")
-                h4(style="color: var(--primary-color); margin-bottom:15px") بيانات التوصيل
+                .summary-row.total
+                  span المجموع الإجمالي
+                  span#total 0 جنيه
 
-                .form-group(style="margin-bottom:15px")
-                  label(for="customerName")
-                    | الاسم الكامل
-                    span(style="color:#ff4444") *
-                  input#customerName(
-                    type="text"
-                    name="customerName"
-                    placeholder="محمد أحمد"
-                    required
-                  )
+                .customer-info
+                  h4.summary-subtitle بيانات التوصيل
 
-                .form-group(style="margin-bottom:15px")
-                  label(for="customerPhone")
-                    | رقم التليفون
-                    span(style="color:#ff4444") *
-                  input#customerPhone(
-                    type="tel"
-                    name="customerPhone"
-                    placeholder="01012345678"
-                    required
-                  )
+                  .form-group
+                    label(for="customerName")
+                      | الاسم الكامل
+                      span.required-mark *
+                    input#customerName(
+                      type="text"
+                      name="customerName"
+                      placeholder="محمد أحمد"
+                      required
+                    )
 
-                .form-group(style="margin-bottom:15px")
-                  label(for="customerAddress")
-                    | العنوان بالتفصيل
-                    span(style="color:#ff4444") *
-                  textarea#customerAddress(
-                    name="customerAddress"
-                    rows="3"
-                    placeholder="مثال: شارع النيل، المعادي، الدور الثالث، شقة 5"
-                    required
-                  )
+                  .form-group
+                    label(for="customerPhone")
+                      | رقم التليفون
+                      span.required-mark *
+                    input#customerPhone(
+                      type="tel"
+                      name="customerPhone"
+                      placeholder="01012345678"
+                      required
+                    )
 
-                .form-group(style="margin-bottom:20px")
-                  label(for="notes") ملاحظات إضافية (اختياري)
-                  textarea#notes(name="notes" rows="2" placeholder="أي ملاحظات خاصة بالطلب...")
+                  .form-group
+                    label(for="customerAddress")
+                      | العنوان بالتفصيل
+                      span.required-mark *
+                    textarea#customerAddress(
+                      name="customerAddress"
+                      rows="3"
+                      placeholder="مثال: شارع النيل، المعادي، الدور الثالث، شقة 5"
+                      required
+                    )
 
-              button.btn.btn-primary.btn-checkout(type="submit") إتمام الطلب
-              a.btn.btn-outline(href="/menu") متابعة التسوق
+                  .form-group
+                    label(for="notes") ملاحظات إضافية
+                    textarea#notes(
+                      name="notes"
+                      rows="2"
+                      placeholder="أي ملاحظات خاصة بالطلب..."
+                    )
 
-  // Success Modal
+                .cart-actions
+                  button.btn.btn-primary.btn-checkout(type="submit") إتمام الطلب
+                  a.btn.btn-outline(href="/products") متابعة التسوق
+
+  // ✅ Success Modal
   .modal#successModal
+    .modal-overlay(onclick="closeModal('successModal')")
     .modal-content
       .modal-icon.success ✓
       h2 تم الطلب بنجاح!
-      p شكراً لك! سيتم التواصل معك قريباً لتأكيد الطلب.
-      button.btn.btn-primary(onclick="closeModal()") حسناً
+      p شكراً لك، سيتم التواصل معك قريباً لتأكيد الطلب.
+      button.btn.btn-primary(type="button" onclick="closeModal('successModal')") حسناً
+
+  // ❌ Error Modal
+  .modal#errorModal
+    .modal-overlay(onclick="closeModal('errorModal')")
+    .modal-content
+      .modal-icon.error ✕
+      h2 حدث خطأ!
+      p#errorMessage رسالة الخطأ هتظهر هنا
+      button.btn.btn-danger(type="button" onclick="closeModal('errorModal')") حسناً
+
+  style.
+    /* ===== Modal Base ===== */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* لما نضيف class active يظهر الـ modal */
+    .modal.active {
+      display: flex;
+    }
+
+    /* Overlay */
+    .modal-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0);
+      backdrop-filter: blur(0px);
+      transition: background 0.35s ease, backdrop-filter 0.35s ease;
+    }
+
+    .modal.active .modal-overlay {
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(4px);
+    }
+
+    /* Modal Content Card */
+    .modal-content {
+      position: relative;
+      z-index: 1;
+      background: #fff;
+      border-radius: 20px;
+      padding: 2.5rem 2rem;
+      max-width: 420px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.15);
+
+      /* انيميشن الظهور */
+      opacity: 0;
+      transform: scale(0.85) translateY(30px);
+      transition:
+        opacity 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+        transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .modal.active .modal-content {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+
+    /* Modal Icon */
+    .modal-icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      margin: 0 auto 1.25rem;
+      font-weight: bold;
+
+      /* انيميشن الأيقونة */
+      opacity: 0;
+      transform: scale(0.5);
+      transition:
+        opacity 0.4s ease 0.15s,
+        transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s;
+    }
+
+    .modal.active .modal-icon {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .modal-icon.success {
+      background: #e8f8f0;
+      color: #1a9e5c;
+      border: 2px solid #b6e8d2;
+    }
+
+    .modal-icon.error {
+      background: #fdecea;
+      color: #d63031;
+      border: 2px solid #f5b8b4;
+    }
+
+    /* النص داخل الـ modal */
+    .modal-content h2 {
+      margin: 0 0 0.5rem;
+      font-size: 1.3rem;
+      color: #1a1a1a;
+
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.3s ease 0.25s, transform 0.3s ease 0.25s;
+    }
+
+    .modal.active .modal-content h2 {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .modal-content p {
+      color: #555;
+      margin: 0 0 1.5rem;
+      font-size: 0.95rem;
+      line-height: 1.6;
+
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.3s ease 0.32s, transform 0.3s ease 0.32s;
+    }
+
+    .modal.active .modal-content p {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .modal-content .btn {
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.3s ease 0.4s, transform 0.3s ease 0.4s;
+    }
+
+    .modal.active .modal-content .btn {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* انيميشن الإغلاق */
+    .modal.closing .modal-overlay {
+      background: rgba(0, 0, 0, 0);
+      backdrop-filter: blur(0px);
+    }
+
+    .modal.closing .modal-content {
+      opacity: 0;
+      transform: scale(0.9) translateY(20px);
+      transition:
+        opacity 0.25s ease,
+        transform 0.25s ease;
+    }
+
+  script.
+    const CART_KEY = 'cart';
+
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const emptyCart = document.getElementById('emptyCart');
+    const cartContent = document.getElementById('cartContent');
+    const cartItemsContainer = document.getElementById('cartItems');
+    const subtotalEl = document.getElementById('subtotal');
+    const totalEl = document.getElementById('total');
+    const itemsCountEl = document.getElementById('itemsCount');
+    const cartForm = document.getElementById('cartForm');
+    const successModal = document.getElementById('successModal');
+    const errorModal = document.getElementById('errorModal');
+    const errorMessage = document.getElementById('errorMessage');
+
+    // ===== Cart Functions =====
+
+    function getRawCart() {
+      try {
+        const stored = localStorage.getItem(CART_KEY);
+        const parsed = stored ? JSON.parse(stored) : [];
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (err) {
+        return [];
+      }
+    }
+
+    function normalizeCart(cart) {
+      return cart.map((item, index) => ({
+        id: String(item.id || item._id || item.productId || `item-${index}`),
+        name: item.name || 'منتج بدون اسم',
+        price: Number(item.price) || 0,
+        image: item.image || '',
+        category: item.category || 'General',
+        qty: Math.max(1, Number(item.qty) || 1)
+      }));
+    }
+
+    function getCart() {
+      return normalizeCart(getRawCart());
+    }
+
+    function saveCart(cart) {
+      localStorage.setItem(CART_KEY, JSON.stringify(cart));
+      updateCartCountBadge();
+    }
+
+    function showLoading() {
+      loadingSpinner.style.display = 'flex';
+    }
+
+    function hideLoading() {
+      loadingSpinner.style.display = 'none';
+    }
+
+    function formatPrice(price) {
+      return `${Number(price).toLocaleString('ar-EG')} جنيه`;
+    }
+
+    function calculateTotals(cart) {
+      const subtotal = cart.reduce((sum, item) => sum + (Number(item.price) * Number(item.qty)), 0);
+      const itemsCount = cart.reduce((sum, item) => sum + Number(item.qty), 0);
+      return { subtotal, total: subtotal, itemsCount };
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function updateCartCountBadge() {
+      const cart = getCart();
+      const totalQty = cart.reduce((sum, item) => sum + Number(item.qty), 0);
+      const cartCount = document.querySelector('.cart-count');
+      if (cartCount) {
+        cartCount.textContent = totalQty;
+        cartCount.classList.toggle('has-items', totalQty > 0);
+      }
+    }
+
+    function renderCart() {
+      const cart = getCart();
+
+      if (!cart.length) {
+        emptyCart.style.display = 'flex';
+        cartContent.style.display = 'none';
+        cartItemsContainer.innerHTML = '';
+        subtotalEl.textContent = '0 جنيه';
+        totalEl.textContent = '0 جنيه';
+        itemsCountEl.textContent = '0';
+        updateCartCountBadge();
+        return;
+      }
+
+      emptyCart.style.display = 'none';
+      cartContent.style.display = 'block';
+      cartItemsContainer.innerHTML = '';
+
+      cart.forEach((item, index) => {
+        const itemTotal = Number(item.price) * Number(item.qty);
+        const card = document.createElement('div');
+        card.className = 'cart-item';
+        card.innerHTML = `
+          <div class="cart-item-image">
+            ${item.image
+              ? `<img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name)}">`
+              : `<div class="cart-item-image-placeholder">AR TEK</div>`}
+          </div>
+          <div class="cart-item-info">
+            <span class="cart-item-cat">${escapeHtml(item.category)}</span>
+            <h3 class="cart-item-name">${escapeHtml(item.name)}</h3>
+            <div class="cart-item-price">${formatPrice(item.price)}</div>
+          </div>
+          <div class="cart-item-controls">
+            <div class="qty-control">
+              <button type="button" class="qty-btn decrease-btn" data-index="${index}">-</button>
+              <span class="qty-value">${item.qty}</span>
+              <button type="button" class="qty-btn increase-btn" data-index="${index}">+</button>
+            </div>
+            <div class="cart-item-total">${formatPrice(itemTotal)}</div>
+            <button type="button" class="remove-btn" data-index="${index}">حذف</button>
+          </div>
+        `;
+        cartItemsContainer.appendChild(card);
+      });
+
+      const totals = calculateTotals(cart);
+      subtotalEl.textContent = formatPrice(totals.subtotal);
+      totalEl.textContent = formatPrice(totals.total);
+      itemsCountEl.textContent = totals.itemsCount;
+      updateCartCountBadge();
+    }
+
+    function updateQuantity(index, change) {
+      const cart = getCart();
+      if (!cart[index]) return;
+      cart[index].qty = Number(cart[index].qty) + change;
+      if (cart[index].qty <= 0) cart.splice(index, 1);
+      saveCart(cart);
+      renderCart();
+    }
+
+    function removeItem(index) {
+      const cart = getCart();
+      if (!cart[index]) return;
+      cart.splice(index, 1);
+      saveCart(cart);
+      renderCart();
+    }
+
+    cartItemsContainer.addEventListener('click', function(e) {
+      const increaseBtn = e.target.closest('.increase-btn');
+      const decreaseBtn = e.target.closest('.decrease-btn');
+      const removeBtn = e.target.closest('.remove-btn');
+      if (increaseBtn) updateQuantity(Number(increaseBtn.dataset.index), 1);
+      if (decreaseBtn) updateQuantity(Number(decreaseBtn.dataset.index), -1);
+      if (removeBtn) removeItem(Number(removeBtn.dataset.index));
+    });
+
+    // ===== Modal Functions =====
+
+    function openModal(modalId) {
+      const modal = document.getElementById(modalId);
+      if (!modal) return;
+      modal.classList.remove('closing');
+      modal.style.display = 'flex';
+      // تأخير صغير عشان الـ transition يشتغل
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          modal.classList.add('active');
+        });
+      });
+    }
+
+    function closeModal(modalId) {
+      const modal = document.getElementById(modalId);
+      if (!modal) return;
+
+      modal.classList.add('closing');
+      modal.classList.remove('active');
+
+      setTimeout(() => {
+        modal.style.display = 'none';
+        modal.classList.remove('closing');
+
+        // لو Success Modal روح لصفحة المنتجات
+        if (modalId === 'successModal') {
+          window.location.href = '/products';
+        }
+      }, 300);
+    }
+
+    function showError(message) {
+      errorMessage.textContent = message;
+      openModal('errorModal');
+    }
+
+    // ===== Form Submit =====
+
+    cartForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const cart = getCart();
+      if (!cart.length) {
+        showError('السلة فارغة، من فضلك أضف منتجات أولاً');
+        return;
+      }
+
+      const customerName = document.getElementById('customerName').value.trim();
+      const customerPhone = document.getElementById('customerPhone').value.trim();
+      const customerAddress = document.getElementById('customerAddress').value.trim();
+      const notes = document.getElementById('notes').value.trim();
+
+      if (!customerName || !customerPhone || !customerAddress) {
+        showError('من فضلك املأ كل البيانات المطلوبة (الاسم، رقم التليفون، العنوان)');
+        return;
+      }
+
+      const phoneRegex = /^01[0125][0-9]{8}$/;
+      if (!phoneRegex.test(customerPhone)) {
+        showError('رقم التليفون غير صحيح، يجب أن يبدأ بـ 01 ويتكون من 11 رقماً');
+        return;
+      }
+
+      const totals = calculateTotals(cart);
+      const orderItems = cart.map(item => ({
+        name: item.name,
+        price: Number(item.price),
+        image: item.image,
+        quantity: Number(item.qty),
+      }));
+
+      const orderData = {
+        name: customerName,
+        number: customerPhone,
+        address: customerAddress,
+        notes,
+        cart: orderItems,
+        total: totals.total
+      };
+
+      try {
+        showLoading();
+
+        const response = await fetch('/api/v1/order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(orderData)
+        });
+
+        // parse الـ JSON بأمان
+        let data = {};
+        try {
+          const contentType = response.headers.get('content-type') || '';
+          if (contentType.includes('application/json')) {
+            data = await response.json();
+          }
+        } catch (parseErr) {
+          // الـ response مش JSON
+        }
+
+        if (!response.ok) {
+          const serverMessage = data.message || data.error || `خطأ ${response.status}: حدث خطأ أثناء إرسال الطلب`;
+          throw new Error(serverMessage);
+        }
+
+        localStorage.removeItem(CART_KEY);
+        renderCart();
+        cartForm.reset();
+        openModal('successModal');
+
+      } catch (error) {
+        let errorMsg = 'حدث خطأ غير متوقع، من فضلك حاول مرة أخرى';
+
+        if (!navigator.onLine) {
+          errorMsg = 'لا يوجد اتصال بالإنترنت، تحقق من الاتصال وحاول مرة أخرى';
+        } else if (error.message) {
+          errorMsg = error.message;
+        }
+
+        showError(errorMsg);
+
+      } finally {
+        hideLoading();
+      }
+    });
+
+    // تعريف الدوال globally
+    window.closeModal = closeModal;
+    window.openModal = openModal;
+    window.showError = showError;
+
+    renderCart();
+    updateCartCountBadge();

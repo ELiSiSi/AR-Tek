@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
 import AutoIncrementFactory from 'mongoose-sequence';
 
-// لازم تبعت الموديل نفسه للـ plugin
 const AutoIncrement = AutoIncrementFactory(mongoose);
 
 const orderSchema = new mongoose.Schema(
@@ -9,6 +8,7 @@ const orderSchema = new mongoose.Schema(
     numberOrder: {
       type: Number,
       unique: true,
+      index: true,
     },
     name: {
       type: String,
@@ -59,13 +59,10 @@ const orderSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['pending', 'done', 'cancel'],
+      enum: ['pending', 'done'],
       default: 'pending',
     },
-    paying: {
-      type: Boolean,
-      default: false,
-    },
+
   },
   {
     timestamps: true,
@@ -73,8 +70,8 @@ const orderSchema = new mongoose.Schema(
 );
 
 orderSchema.plugin(AutoIncrement, {
-  inc_field: 'numberOrder', // اسم الحقل اللي هنزود فيه
-  start_seq: 1000, // تبدأ من أي رقم (اختياري، ممكن 1 أو 10000 ...)
+  inc_field: 'numberOrder',
+  start_seq: 1000,
 });
 
 const Order = mongoose.model('Order', orderSchema);

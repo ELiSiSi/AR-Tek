@@ -1,0 +1,109 @@
+extends layout
+
+block head
+  title المدير
+
+block content
+  .admin-page-header
+    h1
+      i(class="fa-solid fa-chart-line")
+      | تقارير المدير
+    p تحليل شامل للطلبات والتكاليف
+
+  //- إحصائيات شاملة
+  .stats-grid
+    .stat-card
+      .stat-icon.blue
+        i(class="fa-solid fa-shopping-cart")
+      .stat-info
+        h3= analytics.totalOrders || 0
+        p إجمالي الطلبات
+
+    .stat-card
+      .stat-icon.green
+        i(class="fa-solid fa-check-circle")
+      .stat-info
+        h3= analytics.completedOrders || 0
+        p الطلبات المكتملة
+
+    .stat-card
+      .stat-icon.orange
+        i(class="fa-solid fa-clock")
+      .stat-info
+        h3= analytics.pendingOrders || 0
+        p الطلبات المعلقة
+
+    .stat-card
+      .stat-icon.red
+        i(class="fa-solid fa-money-bill-wave")
+      .stat-info
+        h3= `${analytics.totalRevenue || 0} ج.م`
+        p إجمالي الإيرادات
+
+  //- تكاليف الطلبات
+  .admin-card
+    .admin-card-header
+      h2.admin-card-title تكاليف الطلبات المكتملة
+      span.text-success= `إجمالي: ${analytics.totalRevenue || 0} ج.م`
+
+    if completedOrders && completedOrders.length > 0
+      .admin-table-wrapper
+        table.admin-table
+          thead
+            tr
+              th #
+              th الطالبة
+              th العرض
+              th المبلغ الأصلي
+              th الخصم
+              th المبلغ النهائي
+              th تاريخ التنفيذ
+              th ربح النظام
+          tbody
+            each order, index in completedOrders
+              tr
+                td= index + 1
+                td= order.studentName
+                td= order.offerTitle
+                td= `${order.originalPrice} ج.م`
+                td= order.discount ? `${order.discount}%` : '-'
+                td= `${order.finalAmount} ج.م`
+                td= order.completedAt ? order.completedAt.toLocaleDateString('ar-EG') : '-'
+                td.text-success= `${order.profit || order.finalAmount} ج.م`
+    else
+      .empty-state
+        i(class="fa-solid fa-chart-pie")
+        p لا توجد طلبات مكتملة للتحليل
+
+  //- ملخص التحليل
+  .admin-card
+    .admin-card-header
+      h2.admin-card-title ملخص التحليل المالي
+    .stats-grid(style="margin-bottom:0")
+      .stat-card
+        .stat-icon.green
+          i(class="fa-solid fa-arrow-trend-up")
+        .stat-info
+          h3= `${analytics.averageOrderValue || 0} ج.م`
+          p متوسط قيمة الطلب
+
+      .stat-card
+        .stat-icon.blue
+          i(class="fa-solid fa-percent")
+        .stat-info
+          h3= `${analytics.completionRate || 0}%`
+          p نسبة الإنجاز
+
+      .stat-card
+        .stat-icon.orange
+          i(class="fa-solid fa-calendar-day")
+        .stat-info
+          h3= analytics.todayOrders || 0
+          p طلبات اليوم
+
+      .stat-card
+        .stat-icon.red
+          i(class="fa-solid fa-hand-holding-dollar")
+        .stat-info
+          h3= `${analytics.totalProfit || 0} ج.م`
+          p إجمالي الأرباح

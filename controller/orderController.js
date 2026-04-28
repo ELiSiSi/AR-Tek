@@ -13,6 +13,20 @@ export const getOrder = getOne(Order);
 // Update Order -----------------------------------------------------------------------------------
 export const updateOrder = updateOne(Order);
 
+// Mark Order As Done -----------------------------------------------------------------------------------
+export const markOrderAsDone = async (req, res, next) => {
+  try {
+    await Order.findByIdAndUpdate(req.params.id, {
+      status: 'done',
+    });
+
+    res.redirect('/admin/cashier');
+  } catch (err) {
+    console.error(err);
+    return next(new AppError('Error updating order status', 500));
+  }
+};
+
 // Delete Order -----------------------------------------------------------------------------------
 export const deleteOrder = deleteOne(Order);
 

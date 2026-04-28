@@ -1,0 +1,539 @@
+extends base
+
+block pageActions
+  .cashier-info
+    span.badge.badge-warning إدارة العروض
+
+block content
+  - const safeOffers = Array.isArray(offers) ? offers : []
+
+  // ===================== CALCULATIONS =====================
+  - const totalOffers = safeOffers.length
+  - const totalSavings = safeOffers.reduce((sum, o) => sum + ((o.price || 0) - (o.newprice || 0)), 0)
+  - const avgDiscount = totalOffers > 0 ? Math.round((totalSavings / safeOffers.reduce((sum, o) => sum + (o.price || 0), 0)) * 100) : 0
+  - const formatMoney = (num) => Number(num || 0).toLocaleString('ar-EG')
+
+  // ===================== STATS =====================
+  .stats-grid
+    .stat-card
+      .stat-icon
+        i.fa-solid.fa-percent
+      .stat-content
+        .stat-title إجمالي العروض
+        .stat-value= totalOffers
+        .stat-desc عرض مسجل
+
+    .stat-card
+      .stat-icon
+        i.fa-solid.fa-tags
+      .stat-content
+        .stat-title إجمالي التوفير
+        .stat-value= formatMoney(totalSavings) + ' ج.م'
+        .stat-desc فرق السعر للعملاء
+
+    .stat-card
+      .stat-icon
+        i.fa-solid.fa-chart-line
+      .stat-content
+        .stat-title متوسط الخصم
+        .stat-value= avgDiscount + '%'
+        .stat-desc نسبة الخصم المتوسطة
+
+    .stat-card
+      .stat-icon
+        i.fa-solid.fa-fire
+      .stat-content
+        .stat-title عروض نشطة
+        .stat-value= totalOffers
+        .stat-desc كل العروض متاحة
+
+  // ===================== OFFERS TABLE =====================
+  .section-card
+    .section-head
+      div
+        h2.section-title إدارة العروض
+        p.section-subtitle عرض وإدارة جميع العروض والخصومات
+      button.btn.btn-primary#btnAddOffer
+        i.fa-solid.fa-plus
+        span إضافة عرض
+
+    if safeOffers.length
+      .table-wrap
+        table.admin-table
+          thead
+            tr
+              th الصورة
+              th الاسم
+              th السعر الأصلي
+              th السعر الجديد
+              th الخصم
+              th الوصف
+              th الإجراءات
+          tbody#offersTableBody
+            each offer in safeOffers
+              - const discount = offer.price > 0 ? Math.round(((offer.price - offer.newprice) / offer.price) * 100) : 0
+              tr(data-id=offer._id)
+                td
+                  if offer.image
+                    img(src=offer.image, alt=offer.name, width="60", height="60", style="object-fit: cover; border-radius: 8px;")
+                  else
+                    span --
+                td
+                  strong.offer-name= offer.name || 'بدون اسم'
+                  if offer.slug
+                    small.text-muted(style="display: block; font-size: 0.75rem;")= offer.slug
+                td
+                  span.original-price(style="text-decoration: line-through; color: #999;")= formatMoney(offer.price) + ' ج.م'
+                td
+                  span.new-price(style="color: #28a745; font-weight: bold;")= formatMoney(offer.newprice) + ' ج.م'
+                td
+                  span.discount-badge(style="background: #dc3545; color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.85rem; font-weight: bold;")= '-' + discount + '%'
+                td
+                  p.offer-desc(style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0;")= offer.description || '---'
+                td
+                  .action-buttons
+                    button.btn.btn-sm.btn-primary.btn-edit(
+                      data-id=offer._id,
+                      data-name=offer.name,
+                      data-description=offer.description,
+                      data-price=offer.price,
+                      data-newprice=offer.newprice,
+                      data-image=offer.image
+                    )
+                      i.fa-solid.fa-pen
+                    button.btn.btn-sm.btn-danger.btn-delete(
+                      data-id=offer._id,
+                      data-name=offer.name
+                    )
+                      i.fa-solid.fa-trash
+    else
+      .empty-state#emptyState
+        i.fa-solid.fa-percent
+        h3 لا توجد عروض حالياً
+        p قم بإضافة أول عرض للبدء
+        button.btn.btn-primary#btnAddOfferEmpty
+          i.fa-solid.fa-plus
+          span إضافة عرض
+
+  // ===================== ADD OFFER MODAL =====================
+  #addModal.modal-overlay.hidden
+    .modal-box
+      .modal-header
+        h3 إضافة عرض جديد
+        button.modal-close(type="button") &times;
+      form#addForm
+        .form-group
+          label(for="addName") اسم العرض *
+          input#addName.form-control(type="text", name="name", required, placeholder="مثال: عرض الصيف")
+        .form-group
+          label(for="addDescription") الوصف
+          textarea#addDescription.form-control(name="description", rows="3", placeholder="وصف مختصر للعرض...")
+        .form-row
+          .form-group.half
+            label(for="addPrice") السعر الأصلي *
+            input#addPrice.form-control(type="number", name="price", step="0.01", min="0", required, placeholder="مثال: 5000")
+          .form-group.half
+            label(for="addNewPrice") السعر الجديد *
+            input#addNewPrice.form-control(type="number", name="newprice", step="0.01", min="0", required, placeholder="مثال: 3500")
+        .form-group
+          label(for="addImage") رابط الصورة *
+          input#addImage.form-control(type="url", name="image", required, placeholder="https://example.com/offer.jpg")
+        .form-group
+          .preview-box.hidden#addPreview
+            img(src="", alt="Preview", style="max-width: 100%; max-height: 150px; border-radius: 8px;")
+        .modal-actions
+          button.btn.btn-secondary(type="button", onclick="closeModal('addModal')") إلغاء
+          button.btn.btn-primary(type="submit")
+            i.fa-solid.fa-spinner.fa-spin.hidden#addLoading
+            span#addBtnText إضافة العرض
+
+  // ===================== EDIT OFFER MODAL =====================
+  #editModal.modal-overlay.hidden
+    .modal-box
+      .modal-header
+        h3 تعديل العرض
+        button.modal-close(type="button") &times;
+      form#editForm
+        input(type="hidden", name="_id", id="editId")
+        .form-group
+          label(for="editName") اسم العرض *
+          input#editName.form-control(type="text", name="name", required)
+        .form-group
+          label(for="editDescription") الوصف
+          textarea#editDescription.form-control(name="description", rows="3")
+        .form-row
+          .form-group.half
+            label(for="editPrice") السعر الأصلي *
+            input#editPrice.form-control(type="number", name="price", step="0.01", min="0", required)
+          .form-group.half
+            label(for="editNewPrice") السعر الجديد *
+            input#editNewPrice.form-control(type="number", name="newprice", step="0.01", min="0", required)
+        .form-group
+          label(for="editImage") رابط الصورة *
+          input#editImage.form-control(type="url", name="image", required)
+        .form-group
+          .preview-box#editPreview
+            img#editPreviewImg(src="", alt="Preview", style="max-width: 100%; max-height: 150px; border-radius: 8px;")
+        .modal-actions
+          button.btn.btn-secondary(type="button", onclick="closeModal('editModal')") إلغاء
+          button.btn.btn-primary(type="submit")
+            i.fa-solid.fa-spinner.fa-spin.hidden#editLoading
+            span#editBtnText حفظ التعديلات
+
+  // ===================== DELETE MODAL =====================
+  #deleteModal.modal-overlay.hidden
+    .modal-box.modal-small
+      .modal-header
+        h3 تأكيد الحذف
+        button.modal-close(type="button") &times;
+      .modal-body
+        i.fa-solid.fa-triangle-exclamation.warning-icon
+        p هل أنت متأكد من حذف العرض
+          strong#deleteOfferName
+          |  ؟
+        p.text-muted لا يمكن التراجع عن هذا الإجراء.
+      .modal-actions
+        button.btn.btn-secondary(type="button", onclick="closeModal('deleteModal')") إلغاء
+        button.btn.btn-danger#confirmDelete(type="button")
+          i.fa-solid.fa-spinner.fa-spin.hidden#deleteLoading
+          span#deleteBtnText نعم، احذف
+
+block scripts
+  script.
+    const API_BASE = '/api/v1/offer';
+    const formatMoney = (num) => Number(num || 0).toLocaleString('ar-EG');
+
+    // ===================== MODAL FUNCTIONS =====================
+    function openModal(id) {
+      document.getElementById(id).classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+      document.body.style.overflow = '';
+      document.querySelectorAll('.form-error').forEach(el => el.remove());
+    }
+
+    function showError(inputId, message) {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      const existing = input.parentElement.querySelector('.form-error');
+      if (existing) existing.remove();
+      const error = document.createElement('span');
+      error.className = 'form-error';
+      error.style.cssText = 'color: #dc3545; font-size: 0.85rem; display: block; margin-top: 4px;';
+      error.textContent = message;
+      input.parentElement.appendChild(error);
+    }
+
+    // Close on click outside
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) closeModal(overlay.id);
+      });
+    });
+
+    // Close on Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay:not(.hidden)').forEach(m => closeModal(m.id));
+      }
+    });
+
+    document.querySelectorAll('.modal-close').forEach(btn => {
+      btn.addEventListener('click', () => closeModal(btn.closest('.modal-overlay').id));
+    });
+
+    // ===================== IMAGE PREVIEW =====================
+    function setupImagePreview(inputId, previewId, imgId) {
+      const input = document.getElementById(inputId);
+      const preview = document.getElementById(previewId);
+      const img = document.getElementById(imgId);
+
+      input.addEventListener('input', () => {
+        const url = input.value.trim();
+        if (url) {
+          img.src = url;
+          preview.classList.remove('hidden');
+          img.onerror = () => {
+            preview.classList.add('hidden');
+          };
+        } else {
+          preview.classList.add('hidden');
+        }
+      });
+    }
+
+    setupImagePreview('addImage', 'addPreview', 'addPreviewImg');
+    setupImagePreview('editImage', 'editPreview', 'editPreviewImg');
+
+    // ===================== ADD OFFER =====================
+    document.querySelectorAll('#btnAddOffer, #btnAddOfferEmpty').forEach(btn => {
+      if (btn) btn.addEventListener('click', () => {
+        document.getElementById('addForm').reset();
+        document.getElementById('addPreview').classList.add('hidden');
+        openModal('addModal');
+      });
+    });
+
+    document.getElementById('addForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = e.target.querySelector('button[type="submit"]');
+      const loading = document.getElementById('addLoading');
+      const btnText = document.getElementById('addBtnText');
+
+      const price = parseFloat(document.getElementById('addPrice').value);
+      const newprice = parseFloat(document.getElementById('addNewPrice').value);
+
+      if (newprice >= price) {
+        showError('addNewPrice', 'السعر الجديد يجب أن يكون أقل من السعر الأصلي');
+        return;
+      }
+
+      const data = {
+        name: document.getElementById('addName').value.trim(),
+        description: document.getElementById('addDescription').value.trim(),
+        price: price,
+        newprice: newprice,
+        image: document.getElementById('addImage').value.trim()
+      };
+
+      btn.disabled = true;
+      loading.classList.remove('hidden');
+      btnText.textContent = ' جاري الإضافة...';
+
+      try {
+        const res = await fetch(API_BASE, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.message || 'فشل في إضافة العرض');
+
+        addOfferToTable(result.data || result);
+        closeModal('addModal');
+        e.target.reset();
+        document.getElementById('addPreview').classList.add('hidden');
+        updateStats();
+
+      } catch (err) {
+        showError('addName', err.message);
+      } finally {
+        btn.disabled = false;
+        loading.classList.add('hidden');
+        btnText.textContent = 'إضافة العرض';
+      }
+    });
+
+    function addOfferToTable(offer) {
+      const tbody = document.getElementById('offersTableBody');
+      const emptyState = document.getElementById('emptyState');
+      if (emptyState) emptyState.style.display = 'none';
+      if (!tbody) { location.reload(); return; }
+
+      const discount = offer.price > 0 ? Math.round(((offer.price - offer.newprice) / offer.price) * 100) : 0;
+
+      const tr = document.createElement('tr');
+      tr.dataset.id = offer._id;
+      tr.innerHTML = `
+        <td>${offer.image ? `<img src="${offer.image}" alt="${offer.name}" width="60" height="60" style="object-fit: cover; border-radius: 8px;">` : '<span>--</span>'}</td>
+        <td><strong class="offer-name">${offer.name || 'بدون اسم'}</strong>${offer.slug ? `<small class="text-muted" style="display: block; font-size: 0.75rem;">${offer.slug}</small>` : ''}</td>
+        <td><span style="text-decoration: line-through; color: #999;">${formatMoney(offer.price)} ج.م</span></td>
+        <td><span style="color: #28a745; font-weight: bold;">${formatMoney(offer.newprice)} ج.م</span></td>
+        <td><span style="background: #dc3545; color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.85rem; font-weight: bold;">-${discount}%</span></td>
+        <td><p style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0;">${offer.description || '---'}</p></td>
+        <td>
+          <div class="action-buttons">
+            <button class="btn btn-sm btn-primary btn-edit"
+              data-id="${offer._id}"
+              data-name="${offer.name || ''}"
+              data-description="${offer.description || ''}"
+              data-price="${offer.price || 0}"
+              data-newprice="${offer.newprice || 0}"
+              data-image="${offer.image || ''}">
+              <i class="fa-solid fa-pen"></i>
+            </button>
+            <button class="btn btn-sm btn-danger btn-delete"
+              data-id="${offer._id}"
+              data-name="${offer.name || ''}">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        </td>
+      `;
+
+      tbody.insertBefore(tr, tbody.firstChild);
+      attachEditListener(tr.querySelector('.btn-edit'));
+      attachDeleteListener(tr.querySelector('.btn-delete'));
+    }
+
+    // ===================== EDIT OFFER =====================
+    function attachEditListener(btn) {
+      btn.addEventListener('click', () => {
+        const data = btn.dataset;
+        document.getElementById('editId').value = data.id;
+        document.getElementById('editName').value = data.name || '';
+        document.getElementById('editDescription').value = data.description || '';
+        document.getElementById('editPrice').value = data.price || '';
+        document.getElementById('editNewPrice').value = data.newprice || '';
+        document.getElementById('editImage').value = data.image || '';
+
+        const preview = document.getElementById('editPreview');
+        const img = document.getElementById('editPreviewImg');
+        if (data.image) {
+          img.src = data.image;
+          preview.classList.remove('hidden');
+        } else {
+          preview.classList.add('hidden');
+        }
+
+        openModal('editModal');
+      });
+    }
+
+    document.querySelectorAll('.btn-edit').forEach(attachEditListener);
+
+    document.getElementById('editForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('editId').value;
+      const btn = e.target.querySelector('button[type="submit"]');
+      const loading = document.getElementById('editLoading');
+      const btnText = document.getElementById('editBtnText');
+
+      const price = parseFloat(document.getElementById('editPrice').value);
+      const newprice = parseFloat(document.getElementById('editNewPrice').value);
+
+      if (newprice >= price) {
+        showError('editNewPrice', 'السعر الجديد يجب أن يكون أقل من السعر الأصلي');
+        return;
+      }
+
+      const data = {
+        name: document.getElementById('editName').value.trim(),
+        description: document.getElementById('editDescription').value.trim(),
+        price: price,
+        newprice: newprice,
+        image: document.getElementById('editImage').value.trim()
+      };
+
+      btn.disabled = true;
+      loading.classList.remove('hidden');
+      btnText.textContent = ' جاري الحفظ...';
+
+      try {
+        const res = await fetch(`${API_BASE}/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.message || 'فشل في تحديث العرض');
+
+        updateOfferInTable(id, result.data || result);
+        closeModal('editModal');
+
+      } catch (err) {
+        showError('editName', err.message);
+      } finally {
+        btn.disabled = false;
+        loading.classList.add('hidden');
+        btnText.textContent = 'حفظ التعديلات';
+      }
+    });
+
+    function updateOfferInTable(id, offer) {
+      const row = document.querySelector(`tr[data-id="${id}"]`);
+      if (!row) return;
+
+      const discount = offer.price > 0 ? Math.round(((offer.price - offer.newprice) / offer.price) * 100) : 0;
+
+      row.cells[0].innerHTML = offer.image ? `<img src="${offer.image}" alt="${offer.name}" width="60" height="60" style="object-fit: cover; border-radius: 8px;">` : '<span>--</span>';
+      row.cells[1].innerHTML = `<strong class="offer-name">${offer.name || 'بدون اسم'}</strong>${offer.slug ? `<small class="text-muted" style="display: block; font-size: 0.75rem;">${offer.slug}</small>` : ''}`;
+      row.cells[2].innerHTML = `<span style="text-decoration: line-through; color: #999;">${formatMoney(offer.price)} ج.م</span>`;
+      row.cells[3].innerHTML = `<span style="color: #28a745; font-weight: bold;">${formatMoney(offer.newprice)} ج.م</span>`;
+      row.cells[4].innerHTML = `<span style="background: #dc3545; color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.85rem; font-weight: bold;">-${discount}%</span>`;
+      row.cells[5].innerHTML = `<p style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0;">${offer.description || '---'}</p>`;
+
+      const editBtn = row.querySelector('.btn-edit');
+      editBtn.dataset.name = offer.name || '';
+      editBtn.dataset.description = offer.description || '';
+      editBtn.dataset.price = offer.price || 0;
+      editBtn.dataset.newprice = offer.newprice || 0;
+      editBtn.dataset.image = offer.image || '';
+    }
+
+    // ===================== DELETE OFFER =====================
+    let deleteId = null;
+
+    function attachDeleteListener(btn) {
+      btn.addEventListener('click', () => {
+        deleteId = btn.dataset.id;
+        document.getElementById('deleteOfferName').textContent = btn.dataset.name || 'هذا العرض';
+        openModal('deleteModal');
+      });
+    }
+
+    document.querySelectorAll('.btn-delete').forEach(attachDeleteListener);
+
+    document.getElementById('confirmDelete').addEventListener('click', async () => {
+      if (!deleteId) return;
+      const btn = document.getElementById('confirmDelete');
+      const loading = document.getElementById('deleteLoading');
+      const btnText = document.getElementById('deleteBtnText');
+
+      btn.disabled = true;
+      loading.classList.remove('hidden');
+      btnText.textContent = ' جاري الحذف...';
+
+      try {
+        const res = await fetch(`${API_BASE}/${deleteId}`, { method: 'DELETE' });
+        if (!res.ok) {
+          const result = await res.json();
+          throw new Error(result.message || 'فشل في حذف العرض');
+        }
+
+        const row = document.querySelector(`tr[data-id="${deleteId}"]`);
+        if (row) {
+          row.remove();
+          const tbody = document.getElementById('offersTableBody');
+          if (tbody && tbody.children.length === 0) location.reload();
+        }
+
+        closeModal('deleteModal');
+        deleteId = null;
+        updateStats();
+
+      } catch (err) {
+        alert(err.message);
+      } finally {
+        btn.disabled = false;
+        loading.classList.add('hidden');
+        btnText.textContent = 'نعم، احذف';
+      }
+    });
+
+    // ===================== UPDATE STATS =====================
+    function updateStats() {
+      const rows = document.querySelectorAll('#offersTableBody tr');
+      const total = rows.length;
+
+      let totalSavings = 0;
+      let totalOriginal = 0;
+
+      rows.forEach(row => {
+        const originalText = row.cells[2]?.textContent?.replace(/[^0-9.]/g, '') || '0';
+        const newText = row.cells[3]?.textContent?.replace(/[^0-9.]/g, '') || '0';
+        totalOriginal += parseFloat(originalText);
+        totalSavings += (parseFloat(originalText) - parseFloat(newText));
+      });
+
+      const avgDiscount = totalOriginal > 0 ? Math.round((totalSavings / totalOriginal) * 100) : 0;
+
+      const statValues = document.querySelectorAll('.stat-value');
+      if (statValues[0]) statValues[0].textContent = total;
+      if (statValues[1]) statValues[1].textContent = formatMoney(totalSavings) + ' ج.م';
+      if (statValues[2]) statValues[2].textContent = avgDiscount + '%';
+      if (statValues[3]) statValues[3].textContent = total;
+    }

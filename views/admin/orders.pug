@@ -1,0 +1,84 @@
+extends base
+
+block pageActions
+  .cashier-info
+    span.badge.badge-warning طلبات قيد التنفيذ فقط
+
+block content
+  - const safeOrders = Array.isArray(orders) ? orders : []
+
+  // ===================== CALCULATIONS =====================
+  - const totalOrders = safeOrders.length
+  - const totalSales = safeOrders.reduce((sum, order) => sum + (order.total || 0), 0)
+  - const pendingOrders = safeOrders.filter(o => o.status === 'pending').length
+  - const avgOrder = totalOrders > 0 ? (totalSales / totalOrders) : 0
+
+  // تحويل الأرقام بشكل آمن
+  - const formatMoney = (num) => Number(num).toLocaleString('ar-EG')
+
+  // ===================== STATS =====================
+  .stats-grid
+
+    .stat-card
+      .stat-icon
+        i.fa-solid.fa-receipt
+      .stat-content
+        .stat-title إجمالي الطلبات
+        .stat-value= totalOrders
+        .stat-desc طلبات مسجلة
+
+    .stat-card
+      .stat-icon
+        i.fa-solid.fa-money-bill-wave
+      .stat-content
+        .stat-title إجمالي المبيعات
+        .stat-value= formatMoney(totalSales) + ' ج.م'
+        .stat-desc إجمالي الإيراد
+
+    .stat-card
+      .stat-icon
+        i.fa-solid.fa-hourglass-half
+      .stat-content
+        .stat-title قيد التنفيذ
+        .stat-value= pendingOrders
+        .stat-desc لم يتم الدفع بعد
+
+    .stat-card
+      .stat-icon
+        i.fa-solid.fa-chart-line
+      .stat-content
+        .stat-title متوسط الطلب
+        .stat-value= formatMoney(avgOrder) + ' ج.م'
+        .stat-desc متوسط الفاتورة
+
+  // ===================== TABLE =====================
+  .section-card
+    .section-head
+      p.section-subtitle تنفيذ الطلبات بدون حذف أو تعديل
+
+    if safeOrders.length
+      .table-wrap
+        table.admin-table
+          thead
+            tr
+              th رقم الطلب
+              th العميل
+              th الهاتف
+              th الإجمالي
+
+          tbody
+            each order in safeOrders
+              tr
+                td= order.numberOrder || order._id
+                td= order.name || '---'
+                td= order.number || '---'
+                td= (order.total || 0) + ' ج.م'
+                //- td
+                //-       i.fa-solid.fa-check
+                //-       span تم الدفع
+
+    else
+      .empty-state
+        i.fa-solid.fa-cash-register
+        h3 لا توجد طلبات حالياً
+        p جميع الطلبات تم تنفيذها أو لا توجد طلبات جديدة

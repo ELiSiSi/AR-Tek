@@ -1,433 +1,590 @@
-// ================== LocalStorage Keys ==================
-const CART_KEY = 'yakebda_cart';
+/* ============================================
+   AR TEK — Main JavaScript
+   Version: 1.0.0
+   ============================================ */
 
-// ================== Global Cart ==================
-let cart = [];
-
-// ================== XSS Protection ==================
-function escapeHTML(str = '') {
-  if (typeof str !== 'string') return '';
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
-// ================== Load Cart ==================
-function loadCart() {
-  try {
-    const savedCart = localStorage.getItem(CART_KEY);
-    cart = savedCart ? JSON.parse(savedCart) : [];
-  } catch {
-    cart = [];
-    localStorage.removeItem(CART_KEY);
-  }
-
-  updateCartCount();
-
-  if (document.getElementById('cartItems')) {
-    displayCartItems();
-  }
-}
-
-// ================== Save Cart ==================
-function saveCart() {
-  localStorage.setItem(CART_KEY, JSON.stringify(cart));
-  updateCartCount();
-}
-
-// ================== Add To Cart ==================
-function addToCart(name, price, image) {
-  if (isNaN(price) || price <= 0) return;
-
-  const cleanedName = escapeHTML(name);
-  const cleanedImage = escapeHTML(image);
-
-  const item = cart.find((i) => i.name === cleanedName);
-
-  if (item) item.quantity++;
-  else {
-    cart.push({
-      name: cleanedName,
-      price: Number(price),
-      image: cleanedImage,
-      quantity: 1,
-    });
-  }
-
-  saveCart();
-  showNotification(`تم إضافة ${cleanedName} للسلة ✓`);
-}
-
-// ================== Cart Count ==================
-function updateCartCount() {
-  const total = cart.reduce((s, i) => s + i.quantity, 0);
-  document.querySelectorAll('.cart-count').forEach((el) => {
-    el.textContent = total;
-  });
-}
-
-// ================== Display Cart ==================
-function displayCartItems() {
-  const container = document.getElementById('cartItems');
-  const empty = document.getElementById('emptyCart');
-  const content = document.getElementById('cartContent');
-
-  if (!container) return;
-
-  container.innerHTML = '';
-
-  if (!cart.length) {
-    empty && (empty.style.display = 'block');
-    content && (content.style.display = 'none');
-    updateCartSummary();
-    return;
-  }
-
-  empty && (empty.style.display = 'none');
-  content && (content.style.display = 'grid');
-
-  cart.forEach((item, index) => {
-    const div = document.createElement('div');
-    div.className = 'cart-item';
-    div.dataset.index = index;
-
-    div.innerHTML = `
-      <div class="cart-item-image">
-        <img src="${item.image}" alt="${item.name}">
-      </div>
-
-      <div class="cart-item-details">
-        <div class="cart-item-header">
-          <h3>${item.name}</h3>
-          <button type="button" class="btn-remove" data-action="remove">حذف</button>
-        </div>
-        <div class="cart-item-footer">
-          <div class="quantity-controls">
-            <button type="button" class="qty-btn" data-action="decrease">-</button>
-            <span class="quantity">${item.quantity}</span>
-            <button type="button" class="qty-btn" data-action="increase">+</button>
-          </div>
-          <div class="item-price">${item.price * item.quantity} جنيه</div>
-        </div>
-      </div>
-    `;
-
-    container.appendChild(div);
-  });
-
-  updateCartSummary();
-}
-
-// ================== Quantity / Remove ==================
-document.addEventListener('click', (e) => {
-  const btn = e.target.closest('.qty-btn, .btn-remove');
-  if (!btn) return;
-
-  const itemDiv = btn.closest('.cart-item');
-  const index = Number(itemDiv.dataset.index);
-
-  if (btn.dataset.action === 'increase') cart[index].quantity++;
-  if (btn.dataset.action === 'decrease') {
-    cart[index].quantity > 1 ? cart[index].quantity-- : cart.splice(index, 1);
-  }
-  if (btn.dataset.action === 'remove') cart.splice(index, 1);
-
-  saveCart();
-  displayCartItems();
-});
-
-// ================== Cart Summary ==================
-function updateCartSummary() {
-  const total = cart.reduce((s, i) => s + i.price * i.quantity, 0);
-
-  const set = (id, val) => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = `${val} جنيه`;
-  };
-
-  set('subtotal', total);
-  set('total', total);
-}
-
-// ================== Filter Products ==================
-function filterProducts(category) {
-  document.querySelectorAll('.product-card').forEach((card) => {
-    card.style.display =
-      category === 'all' || card.dataset.category === category
-        ? 'block'
-        : 'none';
-  });
-}
-
-// ================== Tabs + Add to Cart (NO inline JS) ==================
-document.addEventListener('click', (e) => {
-  const addBtn = e.target.closest('.btn-add-cart');
-  if (addBtn) {
-    addToCart(addBtn.dataset.name, addBtn.dataset.price, addBtn.dataset.image);
-  }
-
-  const tab = e.target.closest('.tab-btn');
-  if (tab) {
-    document
-      .querySelectorAll('.tab-btn')
-      .forEach((b) => b.classList.remove('active'));
-    tab.classList.add('active');
-    filterProducts(tab.dataset.filter);
-  }
-});
-
-// ================== Notification Function ==================
-function showNotification(msg, type = 'success') {
-  const div = document.createElement('div');
-  div.textContent = msg;
-
-  const bgColor = type === 'error' ? '#e74c3c' : '#2ecc71';
-
-  div.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 15px 30px;
-    border-radius: 8px;
-    background: ${bgColor};
-    color: #fff;
-    font-weight: bold;
-    font-size: 16px;
-    z-index: 9999;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    animation: slideIn 0.3s ease;
-  `;
-
-  document.body.appendChild(div);
-  setTimeout(() => {
-    div.style.animation = 'slideOut 0.3s ease';
-    setTimeout(() => div.remove(), 300);
-  }, 3000);
-}
-
-// ================== Loading Spinner ==================
-function showLoading(show = true) {
-  const spinner = document.getElementById('loadingSpinner');
-  if (spinner) {
-    spinner.style.display = show ? 'flex' : 'none';
-  }
-}
-
-// ================== Clear Cart ==================
-function clearCart() {
-  cart = [];
-  localStorage.removeItem(CART_KEY);
-  updateCartCount();
-  displayCartItems();
-}
-
-// ================== Close Modal ==================
-function closeModal() {
-  document.getElementById('successModal')?.classList.remove('show');
-  window.location.href = '/menu';
-}
-
-// ================== Form Validation ==================
-function validateForm() {
-  const name = document.getElementById('customerName').value.trim();
-  const phone = document.getElementById('customerPhone').value.trim();
-  const address = document.getElementById('customerAddress').value.trim();
-
-  // التحقق من الاسم
-  if (!name) {
-    showNotification('❌ من فضلك أدخل الاسم الكامل', 'error');
-    document.getElementById('customerName').focus();
-    return false;
-  }
-
-  if (name.length < 3) {
-    showNotification('❌ الاسم يجب أن يكون 3 أحرف على الأقل', 'error');
-    document.getElementById('customerName').focus();
-    return false;
-  }
-
-  // التحقق من رقم الهاتف
-  if (!phone) {
-    showNotification('❌ من فضلك أدخل رقم التليفون', 'error');
-    document.getElementById('customerPhone').focus();
-    return false;
-  }
-
-  // التحقق من صحة رقم الهاتف المصري
-  if (!/^01[0125][0-9]{8}$/.test(phone)) {
-    showNotification(
-      '❌ رقم الهاتف غير صحيح! يجب أن يبدأ بـ 010 أو 011 أو 012 أو 015 ويكون 11 رقم',
-      'error'
-    );
-    document.getElementById('customerPhone').focus();
-    return false;
-  }
-
-  // التحقق من العنوان
-  if (!address) {
-    showNotification('❌ من فضلك أدخل العنوان بالتفصيل', 'error');
-    document.getElementById('customerAddress').focus();
-    return false;
-  }
-
-  if (address.length < 10) {
-    showNotification(
-      '❌ العنوان يجب أن يكون مفصل أكثر (10 أحرف على الأقل)',
-      'error'
-    );
-    document.getElementById('customerAddress').focus();
-    return false;
-  }
-
-  return true;
-}
-
-// ================== Checkout Function ==================
-async function checkout(e) {
-  e.preventDefault();
-
-  // التحقق من السلة
-  if (!cart.length) {
-    showNotification('❌ السلة فارغة! أضف منتجات أولاً', 'error');
-    return;
-  }
-
-  // التحقق من صحة البيانات
-  if (!validateForm()) {
-    return;
-  }
-
-  const name = document.getElementById('customerName').value.trim();
-  const phone = document.getElementById('customerPhone').value.trim();
-  const address = document.getElementById('customerAddress').value.trim();
-  const notes = document.getElementById('notes')?.value.trim() || '';
-
-  const total = cart.reduce((s, i) => s + i.price * i.quantity, 0);
-
-  // البيانات المطابقة للـ Schema
-  const orderData = {
-    name: name,
-    number: phone,
-    address: address,
-    notes: notes,
-    cart: cart,
-    total: total,
-  };
-
-  try {
-    // إظهار الـ Loading
-    showLoading(true);
-
-    // إرسال الطلب للـ API
-    const response = await fetch('/api/v1/order', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(orderData),
-    });
-
-    const data = await response.json();
-
-    // إخفاء الـ Loading
-    showLoading(false);
-
-    if (response.ok) {
-      // ✅ نجح الإرسال
-      showNotification('✅ تم إرسال الطلب بنجاح!');
-
-      // مسح السلة
-      clearCart();
-
-      // إظهار الـ Modal
-      const modal = document.getElementById('successModal');
-      if (modal) {
-        modal.classList.add('show');
-
-        // إخفاء الـ Modal بعد 3 ثواني والانتقال للقائمة
-        setTimeout(() => {
-          modal.classList.remove('show');
-          window.location.href = '/menu';
-        }, 3000);
-      }
-    } else {
-      // ❌ فشل الإرسال
-      throw new Error(data.message || 'حدث خطأ في إرسال الطلب');
-    }
-  } catch (error) {
-    // إخفاء الـ Loading
-    showLoading(false);
-
-    // إظهار رسالة الخطأ
-    showNotification(`❌ حدث خطأ في إرسال الطلب: ${error.message}`, 'error');
-    console.error('Error:', error);
-  }
-}
-
-// ================== Form Submit Event ==================
 document.addEventListener('DOMContentLoaded', () => {
-  loadCart();
+  // ─── CUSTOM CURSOR ───────────────────────────
+  const cursorDot = document.querySelector('.cursor-dot');
+  const cursorOutline = document.querySelector('.cursor-outline');
 
-  const form = document.getElementById('cartForm');
-  if (form) {
-    form.addEventListener('submit', checkout);
+  if (cursorDot && cursorOutline) {
+    let dotX = 0,
+      dotY = 0;
+    let outX = 0,
+      outY = 0;
+    let mouseX = 0,
+      mouseY = 0;
+
+    document.addEventListener('mousemove', (e) => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+      cursorDot.style.left = mouseX + 'px';
+      cursorDot.style.top = mouseY + 'px';
+    });
+
+    // Smooth cursor outline
+    function animateCursor() {
+      outX += (mouseX - outX) * 0.12;
+      outY += (mouseY - outY) * 0.12;
+      cursorOutline.style.left = outX + 'px';
+      cursorOutline.style.top = outY + 'px';
+      requestAnimationFrame(animateCursor);
+    }
+    animateCursor();
+
+    // Hover effect
+    const hoverEls = document.querySelectorAll(
+      'a, button, .card, .btn, [role="button"]'
+    );
+    hoverEls.forEach((el) => {
+      el.addEventListener('mouseenter', () =>
+        cursorOutline.classList.add('hovering')
+      );
+      el.addEventListener('mouseleave', () =>
+        cursorOutline.classList.remove('hovering')
+      );
+    });
+
+    // Hide on leave
+    document.addEventListener('mouseleave', () => {
+      cursorDot.style.opacity = '0';
+      cursorOutline.style.opacity = '0';
+    });
+    document.addEventListener('mouseenter', () => {
+      cursorDot.style.opacity = '1';
+      cursorOutline.style.opacity = '1';
+    });
   }
+
+  // ─── HEADER SCROLL ───────────────────────────
+  const header = document.querySelector('.header');
+  if (header) {
+    const onScroll = () => {
+      header.classList.toggle('scrolled', window.scrollY > 30);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  }
+
+  // ─── MOBILE MENU ─────────────────────────────
+  const toggle = document.querySelector('.menu-toggle');
+  const nav = document.querySelector('.nav');
+
+  if (toggle && nav) {
+    toggle.addEventListener('click', () => {
+      const isOpen = nav.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', isOpen);
+      document.body.style.overflow = isOpen ? 'hidden' : '';
+
+      // Animate burger to X
+      const spans = toggle.querySelectorAll('span');
+      if (isOpen) {
+        spans[0].style.cssText = 'transform: translateY(6.5px) rotate(45deg)';
+        spans[1].style.cssText = 'opacity: 0; transform: scaleX(0)';
+        spans[2].style.cssText = 'transform: translateY(-6.5px) rotate(-45deg)';
+      } else {
+        spans.forEach((s) => (s.style.cssText = ''));
+      }
+    });
+
+    // Close on nav link click
+    nav.querySelectorAll('a').forEach((a) => {
+      a.addEventListener('click', () => {
+        nav.classList.remove('open');
+        toggle.setAttribute('aria-expanded', 'false');
+        document.body.style.overflow = '';
+        toggle.querySelectorAll('span').forEach((s) => (s.style.cssText = ''));
+      });
+    });
+  }
+
+  // ─── CART COUNT ──────────────────────────────
+  function updateCartCount() {
+    try {
+      const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+      const total = cart.reduce((sum, item) => sum + (item.qty || 1), 0);
+      const countEls = document.querySelectorAll('.cart-count');
+      countEls.forEach((el) => {
+        el.textContent = total;
+        el.classList.toggle('has-items', total > 0);
+      });
+    } catch (e) {
+      console.warn('Cart read error', e);
+    }
+  }
+  updateCartCount();
+  window.addEventListener('storage', updateCartCount);
+
+  // ─── SCROLL REVEAL ───────────────────────────
+  const revealEls = document.querySelectorAll('[data-reveal]');
+  if (revealEls.length && 'IntersectionObserver' in window) {
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const el = entry.target;
+            const delay = el.dataset.delay || 0;
+            setTimeout(() => el.classList.add('revealed'), Number(delay));
+            obs.unobserve(el);
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -60px 0px' }
+    );
+
+    revealEls.forEach((el) => obs.observe(el));
+  }
+
+  // ─── PARALLAX GLOW ───────────────────────────
+  document.addEventListener('mousemove', (e) => {
+    const glows = document.querySelectorAll('.parallax-glow');
+    const rx = (e.clientX / window.innerWidth - 0.5) * 30;
+    const ry = (e.clientY / window.innerHeight - 0.5) * 30;
+    glows.forEach((g) => {
+      g.style.transform = `translate(${rx}px, ${ry}px)`;
+    });
+  });
+
+  // ─── GLOBAL: Add to Cart ─────────────────────
+  window.ARTek = window.ARTek || {};
+
+  window.ARTek.addToCart = function (product) {
+    try {
+      const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+      const idx = cart.findIndex((i) => i.id === product.id);
+      if (idx > -1) {
+        cart[idx].qty = (cart[idx].qty || 1) + 1;
+      } else {
+        cart.push({ ...product, qty: 1 });
+      }
+      localStorage.setItem('cart', JSON.stringify(cart));
+      updateCartCount();
+      window.ARTek.showToast(`تمت الإضافة إلى السلة`, 'success');
+    } catch (e) {
+      console.error('Add to cart error', e);
+    }
+  };
+
+  // ─── TOAST NOTIFICATION ──────────────────────
+  window.ARTek.showToast = function (msg, type = 'info') {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'toast-container';
+      container.style.cssText = `
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 10001;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        pointer-events: none;
+      `;
+      document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    const colorMap = {
+      success: '#49E0D3',
+      error: '#ff4444',
+      info: '#32BFDD',
+    };
+    const color = colorMap[type] || colorMap.info;
+
+    toast.style.cssText = `
+      background: rgba(5, 10, 12, 0.95);
+      border: 1px solid ${color}44;
+      border-right: 3px solid ${color};
+      color: #F0FFFE;
+      font-family: 'Cairo', sans-serif;
+      font-size: 0.85rem;
+      padding: 12px 20px;
+      border-radius: 8px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 20px ${color}22;
+      backdrop-filter: blur(10px);
+      animation: slideInToast 0.3s ease forwards;
+      pointer-events: all;
+      min-width: 240px;
+      direction: rtl;
+    `;
+    toast.textContent = msg;
+
+    // Inject keyframes once
+    if (!document.getElementById('toast-styles')) {
+      const style = document.createElement('style');
+      style.id = 'toast-styles';
+      style.textContent = `
+        @keyframes slideInToast {
+          from { opacity: 0; transform: translateX(20px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes slideOutToast {
+          from { opacity: 1; transform: translateX(0); }
+          to   { opacity: 0; transform: translateX(20px); }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    container.appendChild(toast);
+    setTimeout(() => {
+      toast.style.animation = 'slideOutToast 0.3s ease forwards';
+      toast.addEventListener('animationend', () => toast.remove(), {
+        once: true,
+      });
+    }, 3000);
+  };
+});
+/* ============================================
+   AR TEK — Home Page JavaScript
+   ============================================ */
+document.addEventListener('DOMContentLoaded', () => {
+
+  // ─── COUNTDOWN TIMER ─────────────────────────
+  const elH = document.getElementById('h');
+  const elM = document.getElementById('m');
+  const elS = document.getElementById('s');
+
+  if (elH && elM && elS) {
+    // Set target: midnight tonight
+    const now    = new Date();
+    const target = new Date(now);
+    target.setHours(23, 59, 59, 0);
+
+    const pad = n => String(n).padStart(2, '0');
+
+    function tick() {
+      const diff = Math.max(0, target - new Date());
+      elH.textContent = pad(Math.floor(diff / 3600000));
+      elM.textContent = pad(Math.floor((diff % 3600000) / 60000));
+      elS.textContent = pad(Math.floor((diff % 60000) / 1000));
+    }
+
+    tick();
+    setInterval(tick, 1000);
+  }
+
+  // ─── ADD TO CART BUTTONS ──────────────────────
+  document.querySelectorAll('.product-card .btn-primary').forEach((btn, i) => {
+    btn.addEventListener('click', () => {
+      const card    = btn.closest('.product-card');
+      const name    = card.querySelector('.product-name')?.textContent?.trim() || 'منتج';
+      const priceEl = card.querySelector('.product-price')?.textContent?.trim() || '0';
+      const cat     = card.querySelector('.product-cat')?.textContent?.trim() || '';
+
+      window.ARTek?.addToCart({ id: `product-${i}`, name, price: priceEl, category: cat });
+
+      // Button feedback
+      const original = btn.textContent;
+      btn.textContent = '✓ تمت الإضافة';
+      btn.style.background = 'linear-gradient(135deg,#49E0D3,#32BFDD)';
+      setTimeout(() => { btn.textContent = original; btn.style.background = ''; }, 2000);
+    });
+  });
+
+  // ─── HCARD ADD TO CART ────────────────────────
+  document.querySelectorAll('.hcard-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.preventDefault();
+      window.ARTek?.addToCart({ id: 'hero-product', name: 'سماعة AR Pro X1', price: '1,299 جنيه', category: 'سماعات' });
+    });
+  });
+
+  // ─── NEWSLETTER FORM ──────────────────────────
+  const form = document.querySelector('.newsletter-form');
+  if (form) {
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const email = form.querySelector('input[type=email]')?.value?.trim();
+      if (!email || !email.includes('@')) {
+        window.ARTek?.showToast('برجاء إدخال بريد إلكتروني صحيح', 'error');
+        return;
+      }
+      window.ARTek?.showToast('شكراً! تم الاشتراك بنجاح ✓', 'success');
+      form.reset();
+    });
+  }
+
+  // ─── PARALLAX HERO CHIPS ──────────────────────
+  const chips = document.querySelectorAll('.chip');
+  if (chips.length) {
+    document.addEventListener('mousemove', e => {
+      const rx = (e.clientX / window.innerWidth  - 0.5) * 16;
+      const ry = (e.clientY / window.innerHeight - 0.5) * 10;
+      chips.forEach((chip, i) => {
+        const factor = (i + 1) * 0.4;
+        chip.style.transform = `translate(${rx * factor}px, ${ry * factor}px)`;
+      });
+    });
+  }
+
 });
 
-// ================== CSS Animations ==================
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes slideIn {
-    from {
-      transform: translateX(400px);
-      opacity: 0;
-    }
-    to {
-      transform: translateX(0);
-      opacity: 1;
+
+// viewController.js -----------------------------------------------------------------------------------
+document.addEventListener('DOMContentLoaded', () => {
+  const filterBtns = document.querySelectorAll('.filter-btn');
+  const productCards = document.querySelectorAll('.product-card');
+
+  filterBtns.forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault(); // مهم جداً عشان ما يروحش للينك
+
+      // إزالة الـ active من كل الأزرار
+      filterBtns.forEach((b) => b.classList.remove('active'));
+
+      // تفعيل الزرار اللي ضغط عليه
+      btn.classList.add('active');
+
+      const filterValue = btn.dataset.filter;
+
+      productCards.forEach((card) => {
+        if (filterValue === 'all') {
+          card.style.display = 'block'; // أو "flex" لو بتستخدم flex
+        } else {
+          const cardCategory = card.dataset.category;
+
+          if (cardCategory === filterValue) {
+            card.style.display = 'block';
+          } else {
+            card.style.display = 'none';
+          }
+        }
+      });
+    });
+  });
+});
+/* ============================================
+   AR TEK — Offers Page JavaScript
+   ============================================ */
+document.addEventListener('DOMContentLoaded', () => {
+
+  // ─── COUNTDOWN TIMER ─────────────────────────
+  const oh = document.getElementById('oh');
+  const om = document.getElementById('om');
+  const os = document.getElementById('os');
+  if (oh && om && os) {
+    const now    = new Date();
+    const target = new Date(now);
+    target.setHours(23, 59, 59, 0);
+    const pad = n => String(n).padStart(2, '0');
+    const tick = () => {
+      const d = Math.max(0, target - new Date());
+      oh.textContent = pad(Math.floor(d / 3600000));
+      om.textContent = pad(Math.floor((d % 3600000) / 60000));
+      os.textContent = pad(Math.floor((d % 60000) / 1000));
+    };
+    tick();
+    setInterval(tick, 1000);
+  }
+
+  // ─── FILTER TABS ─────────────────────────────
+  const tabs      = document.querySelectorAll('.filter-tab');
+  const sortSel   = document.getElementById('sort-select');
+  let   activeFilter = 'all';
+
+  function applyFilters() {
+    const cards = document.querySelectorAll('.offer-card');
+    cards.forEach(card => {
+      const match = activeFilter === 'all' || card.dataset.filter === activeFilter;
+      card.dataset.hidden = match ? 'false' : 'true';
+      card.style.display  = match ? '' : 'none';
+    });
+
+    // Flash cards filter too
+    const flash = document.querySelectorAll('.flash-card');
+    flash.forEach(card => {
+      const match = activeFilter === 'all' || card.dataset.filter === activeFilter;
+      card.style.display = match ? '' : 'none';
+    });
+
+    // Sort
+    if (sortSel) {
+      const grid   = document.getElementById('offers-grid');
+      const items  = [...grid.querySelectorAll('.offer-card:not([style*="display: none"])')];
+      const getP   = el => parseFloat(el.querySelector('.offer-price')?.textContent?.replace(/[^0-9.]/g, '') || '0');
+      const getD   = el => parseFloat(el.querySelector('.offer-disc')?.textContent?.replace(/[^0-9]/g, '') || '0');
+
+      items.sort((a, b) => {
+        switch (sortSel.value) {
+          case 'discount':    return getD(b) - getD(a);
+          case 'price-asc':  return getP(a) - getP(b);
+          case 'price-desc': return getP(b) - getP(a);
+          default:           return 0;
+        }
+      });
+      items.forEach(el => grid.appendChild(el));
     }
   }
 
-  @keyframes slideOut {
-    from {
-      transform: translateX(0);
-      opacity: 1;
-    }
-    to {
-      transform: translateX(400px);
-      opacity: 0;
-    }
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => { t.classList.remove('active'); t.setAttribute('aria-selected', 'false'); });
+      tab.classList.add('active');
+      tab.setAttribute('aria-selected', 'true');
+      activeFilter = tab.dataset.filter;
+      applyFilters();
+    });
+  });
+
+  if (sortSel) sortSel.addEventListener('change', applyFilters);
+
+  // ─── ADD TO CART ──────────────────────────────
+  function bindAddButtons(selector) {
+    document.querySelectorAll(selector).forEach((btn, i) => {
+      btn.addEventListener('click', () => {
+        const card = btn.closest('[class*="card"]');
+        const name = (
+          card?.querySelector('.flash-name, .offer-name')?.textContent ||
+          `منتج ${i + 1}`
+        ).trim();
+        const price = card?.querySelector('.flash-price, .offer-price')?.textContent?.trim() || '';
+        window.ARTek?.addToCart({ id: `offer-${i}-${Date.now()}`, name, price });
+        const orig = btn.textContent;
+        btn.textContent = '✓ تمت الإضافة';
+        setTimeout(() => { btn.textContent = orig; }, 2000);
+      });
+    });
   }
 
-  /* Loading Spinner Styles */
-  .loading-spinner {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.7);
-    justify-content: center;
-    align-items: center;
-    z-index: 10000;
+  bindAddButtons('.flash-add-btn');
+  bindAddButtons('.offer-add');
+
+  // Bundle buttons
+  document.querySelectorAll('.bundle-btn').forEach((btn, i) => {
+    btn.addEventListener('click', () => {
+      const card   = btn.closest('.bundle-card');
+      const name   = card?.querySelector('.bundle-name')?.textContent?.trim() || `باقة ${i + 1}`;
+      const price  = card?.querySelector('.bundle-price')?.textContent?.trim() || '';
+      window.ARTek?.addToCart({ id: `bundle-${i}`, name, price });
+      const orig = btn.textContent;
+      btn.textContent = '✓ تمت إضافة الباقة';
+      setTimeout(() => { btn.textContent = orig; }, 2000);
+    });
+  });
+
+  // ─── PROMO CODE COPY ─────────────────────────
+  const copyBtn = document.querySelector('.promo-copy-btn');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', () => {
+      const code = document.querySelector('.promo-code')?.textContent?.trim() || 'ARTEK10';
+      navigator.clipboard?.writeText(code).catch(() => {});
+      copyBtn.textContent = '✓ تم النسخ!';
+      copyBtn.classList.add('copied');
+      setTimeout(() => {
+        copyBtn.textContent = 'نسخ الكود';
+        copyBtn.classList.remove('copied');
+      }, 3000);
+    });
   }
 
-  .spinner {
-    width: 50px;
-    height: 50px;
-    border: 5px solid #f3f3f3;
-    border-top: 5px solid var(--primary-color, #ff6b35);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
+  // ─── STOCK BAR ANIMATION ──────────────────────
+  if ('IntersectionObserver' in window) {
+    const bars = document.querySelectorAll('.flash-stock-fill');
+    const obs  = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          const el = e.target;
+          const target = el.style.width;
+          el.style.width = '0%';
+          requestAnimationFrame(() => {
+            el.style.transition = 'width 1s cubic-bezier(.4,0,.2,1)';
+            el.style.width = target;
+          });
+          obs.unobserve(el);
+        }
+      });
+    }, { threshold: 0.3 });
+    bars.forEach(b => obs.observe(b));
   }
 
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+});
+document.addEventListener('DOMContentLoaded', () => {
+  const slider = document.querySelector('.slider-track');
+  if (!slider) return;
+
+  const prevBtn = document.querySelector('.slider-arrow.prev');
+  const nextBtn = document.querySelector('.slider-arrow.next');
+  const cards = slider.querySelectorAll('.product-card');
+
+  // Create dots
+  const dotsContainer = document.querySelector('.slider-dots');
+  if (dotsContainer && cards.length > 1) {
+    cards.forEach((_, i) => {
+      const dot = document.createElement('button');
+      dot.className = 'slider-dot' + (i === 0 ? ' active' : '');
+      dot.setAttribute('aria-label', `الشريحة ${i + 1}`);
+      dot.addEventListener('click', () => scrollToCard(i));
+      dotsContainer.appendChild(dot);
+    });
   }
-`;
-document.head.appendChild(style);
+
+  function getCardWidth() {
+    return cards[0]?.offsetWidth + 22 || 302; // card width + gap
+  }
+
+  function scrollToCard(index) {
+    const cardWidth = getCardWidth();
+    slider.scrollTo({ left: index * cardWidth, behavior: 'smooth' });
+  }
+
+  function updateDots() {
+    const cardWidth = getCardWidth();
+    const index = Math.round(slider.scrollLeft / cardWidth);
+    dotsContainer?.querySelectorAll('.slider-dot').forEach((dot, i) => {
+      dot.classList.toggle('active', i === index);
+    });
+  }
+
+  let scrollTimeout;
+  slider.addEventListener('scroll', () => {
+    clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(updateDots, 50);
+  });
+
+  prevBtn?.addEventListener('click', () => {
+    slider.scrollBy({ left: -getCardWidth(), behavior: 'smooth' });
+  });
+
+  nextBtn?.addEventListener('click', () => {
+    slider.scrollBy({ left: getCardWidth(), behavior: 'smooth' });
+  });
+
+  // Touch/drag support
+  let isDown = false;
+  let startX;
+  let scrollLeft;
+
+  slider.addEventListener('mousedown', (e) => {
+    isDown = true;
+    slider.style.cursor = 'grabbing';
+    startX = e.pageX - slider.offsetLeft;
+    scrollLeft = slider.scrollLeft;
+  });
+
+  slider.addEventListener('mouseleave', () => {
+    isDown = false;
+    slider.style.cursor = 'grab';
+  });
+
+  slider.addEventListener('mouseup', () => {
+    isDown = false;
+    slider.style.cursor = 'grab';
+    // Snap to nearest card
+    const cardWidth = getCardWidth();
+    const target = Math.round(slider.scrollLeft / cardWidth) * cardWidth;
+    slider.scrollTo({ left: target, behavior: 'smooth' });
+  });
+
+  slider.addEventListener('mousemove', (e) => {
+    if (!isDown) return;
+    e.preventDefault();
+    const x = e.pageX - slider.offsetLeft;
+    const walk = (x - startX) * 1.5;
+    slider.scrollLeft = scrollLeft - walk;
+  });
+
+  slider.style.cursor = 'grab';
+});

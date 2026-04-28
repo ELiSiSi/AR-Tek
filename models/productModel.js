@@ -1,19 +1,20 @@
 import mongoose from 'mongoose';
 import slugify from 'slugify';
 
-const mealSchema = new mongoose.Schema(
+const productSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: [true, 'Meal must have a name'],
+      required: [true, 'Product must have a name'],
       trim: true,
-      unique: true,
-
+      unique: [true, 'Product name must be unique'],
+      index: true,
     },
     slug: {
       type: String,
       lowercase: true,
       unique: true,
+      index: true,
     },
     description: {
       type: String,
@@ -21,27 +22,31 @@ const mealSchema = new mongoose.Schema(
     },
     price: {
       type: Number,
-      required: [true, 'Meal must have a price'],
+      required: [true, 'Product must have a price'],
     },
     image: {
       type: String,
       required: true,
     },
+    images: {
+      type: [String],
+      default: [],
+    },
     category: {
       type: String,
-      required: [true, 'Meal must have a category'],
+      required: [true, 'Product must have a category'],
       trim: true,
     },
   },
   { timestamps: true }
 );
 
-mealSchema.pre('save', function (next) {
+productSchema.pre('save', function (next) {
   if (!this.slug || this.isModified('name')) {
     this.slug = slugify(this.name, { lower: true });
   }
   next();
 });
 
-const Meal = mongoose.model('Meal', mealSchema);
-export default Meal;
+const Product = mongoose.model('Product', productSchema);
+export default Product;

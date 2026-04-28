@@ -3,17 +3,70 @@ html(lang="ar" dir="rtl")
   head
     meta(charset="UTF-8")
     meta(name="viewport" content="width=device-width, initial-scale=1.0")
-    title #{title} - Admin
+
+    title= pageTitle ? pageTitle + ' | لوحة الإدارة' : 'لوحة الإدارة'
+
+    link(rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css")
     link(rel="stylesheet" href="/css/admin.css")
-    link(href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet")
-    link(rel="icon" type="image/png" href="/img/logo.png")
+
+    block head
 
   body
-    header
+    // ================= HEADER =================
+    header.admin-header
+      .admin-header-inner
 
-    main
-      block content
+        a.admin-logo(href="/admin")
+          i.fa-solid.fa-shield-halved
+          span لوحة الإدارة
 
-    footer
-      .footer-container
-        p جميع الحقوق محفوظة © 2026
+        .admin-header-actions
+          if currentAdmin
+            .admin-user
+              i.fa-solid.fa-user
+              span= currentAdmin.name || 'Admin'
+
+          a.icon-btn(href="/" title="الموقع")
+            i.fa-solid.fa-house
+
+
+    // ================= LAYOUT =================
+    .admin-layout
+
+      // ===== SIDEBAR =====
+      aside.admin-sidebar
+        nav
+          a(class=page === 'dashboard' ? 'active' : '', href="/admin/dashboard")
+            i.fa-solid.fa-chart-line
+            span الرئيسية
+
+          a(class=title === 'Orders' ? 'active' : '', href="/admin/orders")
+            i.fa-solid.fa-basket-shopping
+            span الطلبات
+
+          a(class=title === 'Products' ? 'active' : '', href="/admin/products")
+            i.fa-solid.fa-box
+            span المنتجات
+
+          a(class=title === 'Offers' ? 'active' : '', href="/admin/offers")
+            i.fa-solid.fa-tags
+            span العروض
+
+      // ===== MAIN =====
+      main.admin-main
+
+        if pageTitle
+          .page-header
+            h1= pageTitle
+            if pageDescription
+              p= pageDescription
+
+        block pageActions
+
+        block content
+
+    // ================= FOOTER =================
+    footer.admin-footer
+      p © 2026 جميع الحقوق محفوظة
+
+    block scripts

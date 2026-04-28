@@ -1,0 +1,707 @@
+extends base
+
+block pageActions
+  .cashier-info
+    span.badge.badge-success إدارة المنتجات
+
+block content
+  - const safeProducts = Array.isArray(products) ? products : []
+
+  // ===================== CALCULATIONS =====================
+  - const totalProducts = safeProducts.length
+  - const totalValue = safeProducts.reduce((sum, p) => sum + (p.price || 0), 0)
+  - const avgPrice = totalProducts > 0 ? (totalValue / totalProducts) : 0
+  - const categories = [...new Set(safeProducts.map(p => p.category).filter(Boolean))]
+  - const formatMoney = (num) => Number(num || 0).toLocaleString('ar-EG')
+
+  // ===================== STATS =====================
+  .stats-grid
+    .stat-card
+      .stat-icon
+        i.fa-solid.fa-box-open
+      .stat-content
+        .stat-title إجمالي المنتجات
+        .stat-value= totalProducts
+        .stat-desc منتج مسجل
+
+    .stat-card
+      .stat-icon
+        i.fa-solid.fa-tags
+      .stat-content
+        .stat-title عدد الأقسام
+        .stat-value= categories.length
+        .stat-desc تصنيفات مختلفة
+
+    .stat-card
+      .stat-icon
+        i.fa-solid.fa-money-bill-wave
+      .stat-content
+        .stat-title متوسط السعر
+        .stat-value= formatMoney(avgPrice) + ' ج.م'
+        .stat-desc متوسط أسعار المنتجات
+
+    .stat-card
+      .stat-icon
+        i.fa-solid.fa-coins
+      .stat-content
+        .stat-title قيمة الأسعار
+        .stat-value= formatMoney(totalValue) + ' ج.م'
+        .stat-desc مجموع الأسعار
+
+  // ===================== PRODUCTS TABLE =====================
+  .section-card
+    .section-head
+      div
+        h2.section-title إدارة المنتجات
+        p.section-subtitle عرض وإدارة جميع المنتجات
+      button.btn.btn-primary#btnAddProduct
+        i.fa-solid.fa-plus
+        span إضافة منتج
+
+    if safeProducts.length
+      .table-wrap
+        table.admin-table
+          thead
+            tr
+              th الصورة
+              th الاسم
+              th التصنيف
+              th السعر
+              th أضيف بتاريخ
+              th الإجراءات
+          tbody#productsTableBody
+            each product in safeProducts
+              - const allImages = [product.image, ...(Array.isArray(product.images) ? product.images : [])].filter(Boolean)
+              tr(data-id=product._id, data-images=JSON.stringify(allImages))
+                td
+                  if product.image
+                    img(src=product.image, alt=product.name, width="55", height="55")
+                  else if product.images && product.images.length
+                    img(src=product.images[0], alt=product.name, width="55", height="55")
+                  else
+                    span --
+                td
+                  strong.product-name= product.name || 'بدون اسم'
+                td
+                  span.badge.badge-success.product-category= product.category || '---'
+                td.product-price= formatMoney(product.price) + ' ج.م'
+                td.product-date= new Date(product.createdAt).toLocaleDateString('ar-EG')
+                td
+                  .action-buttons
+                    button.btn.btn-sm.btn-primary.btn-edit(
+                      data-id=product._id,
+                      data-name=product.name,
+                      data-category=product.category,
+                      data-price=product.price,
+                      data-images=JSON.stringify(allImages)
+                    )
+                      i.fa-solid.fa-pen
+                    button.btn.btn-sm.btn-danger.btn-delete(
+                      data-id=product._id,
+                      data-name=product.name
+                    )
+                      i.fa-solid.fa-trash
+    else
+      .empty-state#emptyState
+        i.fa-solid.fa-box-open
+        h3 لا توجد منتجات حالياً
+        p قم بإضافة أول منتج للبدء
+        button.btn.btn-primary#btnAddProductEmpty
+          i.fa-solid.fa-plus
+          span إضافة منتج
+
+  // ===================== ADD PRODUCT MODAL =====================
+  #addModal.modal-overlay
+    .modal-box
+      .modal-header
+        h3 إضافة منتج جديد
+        button.modal-close(type="button") &times;
+      form#addForm
+        .form-group
+          label(for="addName") اسم المنتج *
+          input#addName.form-control(type="text", name="name", required, placeholder="مثال: آيفون 15")
+        .form-group
+          label(for="addCategory") التصنيف *
+          input#addCategory.form-control(type="text", name="category", required, placeholder="مثال: إلكترونيات")
+        .form-group
+          label(for="addPrice") السعر *
+          input#addPrice.form-control(type="number", name="price", step="0.01", min="0", required, placeholder="مثال: 25000")
+        .form-group
+          label صور المنتج
+          p.field-hint(style="font-size:0.82rem;color:#888;margin:2px 0 8px") أضف رابط أو أكثر — الأولى هي الصورة الرئيسية
+          #addImagesList
+            .image-input-row(style="display:flex;gap:8px;margin-bottom:8px")
+              input.form-control.image-url-input(type="url", placeholder="https://example.com/image.jpg")
+              button.btn.btn-sm.btn-danger.remove-image-btn(type="button", title="حذف")
+                i.fa-solid.fa-trash
+          button.btn.btn-secondary.btn-sm#addImageBtn(type="button")
+            i.fa-solid.fa-plus
+            span  إضافة صورة أخرى
+        .modal-actions
+          button.btn.btn-secondary(type="button", onclick="closeModal('addModal')") إلغاء
+          button.btn.btn-primary(type="submit")
+            i.fa-solid.fa-spinner.fa-spin.hidden#addLoading
+            span#addBtnText إضافة المنتج
+
+  // ===================== EDIT MODAL =====================
+  #editModal.modal-overlay
+    .modal-box
+      .modal-header
+        h3 تعديل المنتج
+        button.modal-close(type="button") &times;
+      form#editForm
+        input(type="hidden", name="_id", id="editId")
+        .form-group
+          label(for="editName") اسم المنتج *
+          input#editName.form-control(type="text", name="name", required)
+        .form-group
+          label(for="editCategory") التصنيف *
+          input#editCategory.form-control(type="text", name="category", required)
+        .form-group
+          label(for="editPrice") السعر *
+          input#editPrice.form-control(type="number", name="price", step="0.01", min="0", required)
+        .form-group
+          label صور المنتج
+          p.field-hint(style="font-size:0.82rem;color:#888;margin:2px 0 8px") الأولى هي الصورة الرئيسية
+          #editImagesList
+          button.btn.btn-secondary.btn-sm#editImageBtn(type="button")
+            i.fa-solid.fa-plus
+            span  إضافة صورة أخرى
+        .modal-actions
+          button.btn.btn-secondary(type="button", onclick="closeModal('editModal')") إلغاء
+          button.btn.btn-primary(type="submit")
+            i.fa-solid.fa-spinner.fa-spin.hidden#editLoading
+            span#editBtnText حفظ التعديلات
+
+  // ===================== DELETE MODAL =====================
+  #deleteModal.modal-overlay
+    .modal-box.modal-small
+      .modal-header
+        h3 تأكيد الحذف
+        button.modal-close(type="button") &times;
+      .modal-body
+        i.fa-solid.fa-triangle-exclamation.warning-icon
+        p هل أنت متأكد من حذف المنتج
+          strong#deleteProductName
+          |  ؟
+        p.text-muted لا يمكن التراجع عن هذا الإجراء.
+      .modal-actions
+        button.btn.btn-secondary(type="button", onclick="closeModal('deleteModal')") إلغاء
+        button.btn.btn-danger#confirmDelete(type="button")
+          i.fa-solid.fa-spinner.fa-spin.hidden#deleteLoading
+          span#deleteBtnText نعم، احذف
+
+  // ===================== ERROR TOAST =====================
+  #errorToast.error-toast
+    .error-toast-icon ✕
+    span#errorToastMsg
+
+  style.
+    /* ===== Modal Base ===== */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0);
+      backdrop-filter: blur(0px);
+      transition: background 0.35s ease, backdrop-filter 0.35s ease;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-overlay.is-open {
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-box {
+      position: relative;
+      z-index: 1;
+      opacity: 0;
+      transform: scale(0.88) translateY(28px);
+      transition:
+        opacity 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+        transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .modal-overlay.is-open .modal-box {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+
+    .modal-overlay.closing .modal-box {
+      opacity: 0;
+      transform: scale(0.92) translateY(16px);
+      transition: opacity 0.22s ease, transform 0.22s ease;
+    }
+
+    .modal-overlay.closing {
+      background: rgba(0, 0, 0, 0);
+      backdrop-filter: blur(0px);
+      transition: background 0.22s ease, backdrop-filter 0.22s ease;
+    }
+
+    /* ===== Image Input Row ===== */
+    .image-input-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+
+    .image-input-row .form-control {
+      flex: 1;
+    }
+
+    /* ===== Error Toast ===== */
+    .error-toast {
+      position: fixed;
+      bottom: -80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #d63031;
+      color: #fff;
+      padding: 0.75rem 1.5rem;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      box-shadow: 0 8px 30px rgba(214, 48, 49, 0.35);
+      z-index: 99999;
+      transition: bottom 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      white-space: nowrap;
+      max-width: 90vw;
+    }
+
+    .error-toast.show {
+      bottom: 30px;
+    }
+
+    .error-toast-icon {
+      width: 24px;
+      height: 24px;
+      background: rgba(255,255,255,0.25);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+block scripts
+  script.
+    const API_BASE = '/api/v1/product';
+
+    // ===================== MODAL FUNCTIONS =====================
+    function openModal(id) {
+      const modal = document.getElementById(id);
+      if (!modal) return;
+      modal.classList.remove('closing', 'is-open');
+      modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          modal.classList.add('is-open');
+        });
+      });
+    }
+
+    function closeModal(id) {
+      const modal = document.getElementById(id);
+      if (!modal) return;
+      modal.classList.add('closing');
+      modal.classList.remove('is-open');
+      modal.querySelectorAll('.form-error').forEach(el => el.remove());
+      setTimeout(() => {
+        modal.style.display = 'none';
+        modal.classList.remove('closing');
+        document.body.style.overflow = '';
+      }, 250);
+    }
+
+    // ===================== ERROR TOAST =====================
+    let toastTimer = null;
+
+    function showErrorToast(message) {
+      const toast = document.getElementById('errorToast');
+      const msg = document.getElementById('errorToastMsg');
+      msg.textContent = message;
+      toast.classList.add('show');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 4000);
+    }
+
+    // ===================== INLINE FIELD ERROR =====================
+    function showFieldError(inputId, message) {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      const existing = input.parentElement.querySelector('.form-error');
+      if (existing) existing.remove();
+      const error = document.createElement('span');
+      error.className = 'form-error';
+      error.style.cssText = 'color: #dc3545; font-size: 0.85rem; display: block; margin-top: 4px;';
+      error.textContent = message;
+      input.parentElement.appendChild(error);
+    }
+
+    // Close on click outside
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) closeModal(overlay.id);
+      });
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay.is-open').forEach(m => closeModal(m.id));
+      }
+    });
+
+    // Close buttons
+    document.querySelectorAll('.modal-close').forEach(btn => {
+      btn.addEventListener('click', () => closeModal(btn.closest('.modal-overlay').id));
+    });
+
+    // ===================== IMAGE INPUTS HELPERS =====================
+    function createImageRow(value = '') {
+      const row = document.createElement('div');
+      row.className = 'image-input-row';
+      row.innerHTML = `
+        <input type="url" class="form-control image-url-input" placeholder="https://example.com/image.jpg" value="${value}">
+        <button type="button" class="btn btn-sm btn-danger remove-image-btn" title="حذف">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      `;
+      row.querySelector('.remove-image-btn').addEventListener('click', () => {
+        // لا تحذف الـ row الأولى — بس امسح قيمتها
+        const list = row.parentElement;
+        if (list && list.children.length > 1) {
+          row.remove();
+        } else {
+          row.querySelector('input').value = '';
+        }
+      });
+      return row;
+    }
+
+    function getImagesFromList(listId) {
+      return [...document.querySelectorAll(`#${listId} .image-url-input`)]
+        .map(i => i.value.trim())
+        .filter(Boolean);
+    }
+
+    function populateImageList(listId, images = []) {
+      const list = document.getElementById(listId);
+      list.innerHTML = '';
+      const urls = images.length ? images : [''];
+      urls.forEach(url => list.appendChild(createImageRow(url)));
+    }
+
+    // زرار إضافة صورة — ADD
+    document.getElementById('addImageBtn').addEventListener('click', () => {
+      document.getElementById('addImagesList').appendChild(createImageRow());
+    });
+
+    // زرار إضافة صورة — EDIT
+    document.getElementById('editImageBtn').addEventListener('click', () => {
+      document.getElementById('editImagesList').appendChild(createImageRow());
+    });
+
+    // تفعيل زر الحذف على الـ row الأولى الموجودة في الـ HTML من البداية
+    document.querySelectorAll('#addImagesList .remove-image-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const row = btn.closest('.image-input-row');
+        const list = row.parentElement;
+        if (list.children.length > 1) {
+          row.remove();
+        } else {
+          row.querySelector('input').value = '';
+        }
+      });
+    });
+
+    // ===================== ADD PRODUCT =====================
+    document.querySelectorAll('#btnAddProduct, #btnAddProductEmpty').forEach(btn => {
+      if (btn) btn.addEventListener('click', () => {
+        document.getElementById('addForm').reset();
+        populateImageList('addImagesList', []);
+        openModal('addModal');
+      });
+    });
+
+    document.getElementById('addForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const btn = e.target.querySelector('button[type="submit"]');
+      const loading = document.getElementById('addLoading');
+      const btnText = document.getElementById('addBtnText');
+
+      const images = getImagesFromList('addImagesList');
+
+      const data = {
+        name: document.getElementById('addName').value.trim(),
+        category: document.getElementById('addCategory').value.trim(),
+        price: parseFloat(document.getElementById('addPrice').value),
+        image: images[0] || undefined,
+        images: images.slice(1),
+      };
+
+      btn.disabled = true;
+      loading.classList.remove('hidden');
+      btnText.textContent = ' جاري الإضافة...';
+
+      try {
+        const res = await fetch(API_BASE, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        let result = {};
+        if (res.ok) {
+            window.location.href = '/admin/products';
+            }
+        try {
+          const ct = res.headers.get('content-type') || '';
+          if (ct.includes('application/json')) result = await res.json();
+        } catch (_) {}
+
+        if (!res.ok) {
+          throw new Error(result.message || result.error || `خطأ ${res.status}: فشل في إضافة المنتج`);
+        }
+
+        addProductToTable(result.data || result);
+        closeModal('addModal');
+        e.target.reset();
+
+      } catch (err) {
+        showFieldError('addName', err.message);
+        showErrorToast(err.message);
+      } finally {
+        btn.disabled = false;
+        loading.classList.add('hidden');
+        btnText.textContent = 'إضافة المنتج';
+      }
+    });
+
+    function addProductToTable(product) {
+      const tbody = document.getElementById('productsTableBody');
+      const emptyState = document.getElementById('emptyState');
+
+      if (emptyState) emptyState.style.display = 'none';
+
+      if (!tbody) {
+        location.reload();
+        return;
+      }
+
+      const formatMoney = (num) => Number(num || 0).toLocaleString('ar-EG');
+      const dateStr = new Date(product.createdAt || Date.now()).toLocaleDateString('ar-EG');
+      const allImages = [product.image, ...(Array.isArray(product.images) ? product.images : [])].filter(Boolean);
+      const thumbSrc = allImages[0] || '';
+
+      const tr = document.createElement('tr');
+      tr.dataset.id = product._id;
+      tr.dataset.images = JSON.stringify(allImages);
+      tr.innerHTML = `
+        <td>${thumbSrc ? `<img src="${thumbSrc}" alt="${product.name}" width="55" height="55">` : '<span>--</span>'}</td>
+        <td><strong class="product-name">${product.name || 'بدون اسم'}</strong></td>
+        <td><span class="badge badge-success product-category">${product.category || '---'}</span></td>
+        <td class="product-price">${formatMoney(product.price)} ج.م</td>
+        <td class="product-date">${dateStr}</td>
+        <td>
+          <div class="action-buttons">
+            <button class="btn btn-sm btn-primary btn-edit"
+              data-id="${product._id}"
+              data-name="${product.name || ''}"
+              data-category="${product.category || ''}"
+              data-price="${product.price || 0}"
+              data-images='${JSON.stringify(allImages)}'>
+              <i class="fa-solid fa-pen"></i>
+            </button>
+            <button class="btn btn-sm btn-danger btn-delete"
+              data-id="${product._id}"
+              data-name="${product.name || ''}">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        </td>
+      `;
+
+      tbody.insertBefore(tr, tbody.firstChild);
+      attachEditListener(tr.querySelector('.btn-edit'));
+      attachDeleteListener(tr.querySelector('.btn-delete'));
+    }
+
+    // ===================== EDIT PRODUCT =====================
+    function attachEditListener(btn) {
+      btn.addEventListener('click', () => {
+        const data = btn.dataset;
+        document.getElementById('editId').value = data.id;
+        document.getElementById('editName').value = data.name || '';
+        document.getElementById('editCategory').value = data.category || '';
+        document.getElementById('editPrice').value = data.price || '';
+
+        let images = [];
+        try { images = JSON.parse(data.images || '[]'); } catch (_) {}
+        populateImageList('editImagesList', images);
+
+        openModal('editModal');
+      });
+    }
+
+    document.querySelectorAll('.btn-edit').forEach(attachEditListener);
+
+    document.getElementById('editForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const id = document.getElementById('editId').value;
+      const btn = e.target.querySelector('button[type="submit"]');
+      const loading = document.getElementById('editLoading');
+      const btnText = document.getElementById('editBtnText');
+
+      const images = getImagesFromList('editImagesList');
+
+      const data = {
+        name: document.getElementById('editName').value.trim(),
+        category: document.getElementById('editCategory').value.trim(),
+        price: parseFloat(document.getElementById('editPrice').value),
+        image: images[0] || undefined,
+        images: images.slice(1),
+      };
+
+      btn.disabled = true;
+      loading.classList.remove('hidden');
+      btnText.textContent = ' جاري الحفظ...';
+
+      try {
+        const res = await fetch(`${API_BASE}/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+          path: 'update-product'
+        });
+
+        let result = {};
+        if (res.ok) {
+            window.location.href = '/admin/products';
+            }
+        try {
+          const ct = res.headers.get('content-type') || '';
+          if (ct.includes('application/json')) result = await res.json();
+        } catch (_) {}
+
+        if (!res.ok) {
+          throw new Error(result.message || result.error || `خطأ ${res.status}: فشل في تحديث المنتج`);
+        }
+
+        updateProductInTable(id, result.data || result);
+        closeModal('editModal');
+
+      } catch (err) {
+        showFieldError('editName', err.message);
+        showErrorToast(err.message);
+      } finally {
+        btn.disabled = false;
+        loading.classList.add('hidden');
+        btnText.textContent = 'حفظ التعديلات';
+      }
+    });
+
+    function updateProductInTable(id, product) {
+      const row = document.querySelector(`tr[data-id="${id}"]`);
+      if (!row) return;
+
+      const formatMoney = (num) => Number(num || 0).toLocaleString('ar-EG');
+      const allImages = [product.image, ...(Array.isArray(product.images) ? product.images : [])].filter(Boolean);
+      const thumbSrc = allImages[0] || '';
+
+      row.querySelector('.product-name').textContent = product.name || 'بدون اسم';
+      row.querySelector('.product-category').textContent = product.category || '---';
+      row.querySelector('.product-price').textContent = formatMoney(product.price) + ' ج.م';
+
+      const imgCell = row.cells[0];
+      imgCell.innerHTML = thumbSrc
+        ? `<img src="${thumbSrc}" alt="${product.name}" width="55" height="55">`
+        : '<span>--</span>';
+
+      const editBtn = row.querySelector('.btn-edit');
+      editBtn.dataset.name = product.name || '';
+      editBtn.dataset.category = product.category || '';
+      editBtn.dataset.price = product.price || 0;
+      editBtn.dataset.images = JSON.stringify(allImages);
+
+      row.dataset.images = JSON.stringify(allImages);
+    }
+
+    // ===================== DELETE PRODUCT =====================
+    let deleteId = null;
+
+    function attachDeleteListener(btn) {
+      btn.addEventListener('click', () => {
+        deleteId = btn.dataset.id;
+        document.getElementById('deleteProductName').textContent = btn.dataset.name || 'هذا المنتج';
+        openModal('deleteModal');
+      });
+    }
+
+    document.querySelectorAll('.btn-delete').forEach(attachDeleteListener);
+
+    document.getElementById('confirmDelete').addEventListener('click', async () => {
+      if (!deleteId) return;
+
+      const btn = document.getElementById('confirmDelete');
+      const loading = document.getElementById('deleteLoading');
+      const btnText = document.getElementById('deleteBtnText');
+
+      btn.disabled = true;
+      loading.classList.remove('hidden');
+      btnText.textContent = ' جاري الحذف...';
+
+      try {
+        const res = await fetch(`${API_BASE}/${deleteId}`, {
+          method: 'DELETE'
+        });
+
+        if (!res.ok) {
+          let result = {};
+          try {
+            const ct = res.headers.get('content-type') || '';
+            if (ct.includes('application/json')) result = await res.json();
+          } catch (_) {}
+          throw new Error(result.message || result.error || `خطأ ${res.status}: فشل في حذف المنتج`);
+        }
+
+        const row = document.querySelector(`tr[data-id="${deleteId}"]`);
+        if (row) {
+          row.remove();
+          const tbody = document.getElementById('productsTableBody');
+          if (tbody && tbody.children.length === 0) location.reload();
+        }
+
+        closeModal('deleteModal');
+        deleteId = null;
+
+      } catch (err) {
+        closeModal('deleteModal');
+        showErrorToast(err.message);
+      } finally {
+        btn.disabled = false;
+        loading.classList.add('hidden');
+        btnText.textContent = 'نعم، احذف';
+      }
+    });

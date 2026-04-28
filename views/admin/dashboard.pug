@@ -1,291 +1,60 @@
 extends base
 
 block content
-  .dashboard-container
-    h2 مرحبًا بك في لوحة التحكم
+  - const safeStats = (typeof stats === 'object' && stats) ? stats : {}
 
-    // ===== Cards =====
-    .dashboard-cards
-      .card
-        h3 الطلبات
-        p #{orders.length} طلب جديد
+  .stats-grid
+    .stat-card
+      .stat-icon
+        i.fa-solid.fa-basket-shopping
+      .stat-content
+        span.stat-label إجمالي الطلبات
+        strong.stat-value= safeStats.totalOrders || 0
+        small.stat-hint كل الطلبات داخل النظام
 
-      .card
-        h3 المنتجات
-        p #{meals.length} منتج
+    .stat-card
+      .stat-icon
+        i.fa-solid.fa-clock
+      .stat-content
+        span.stat-label الطلبات قيد الانتظار
+        strong.stat-value= safeStats.pendingOrders || 0
+        small.stat-hint لم يتم تنفيذها بعد
 
-      .card
-        h3 العروض
-        p #{offers.length} عرض
+    .stat-card
+      .stat-icon
+        i.fa-solid.fa-circle-check
+      .stat-content
+        span.stat-label الطلبات المكتملة
+        strong.stat-value= safeStats.doneOrders || 0
+        small.stat-hint تم تسليمها بنجاح
 
-      .card
-        h3 الإيرادات
-        - let Total=0
-        each orderDone in ordersDone
-          - Total+=orderDone.total
-        p #{Total} جنيه
+    .stat-card
+      .stat-icon
+        i.fa-solid.fa-money-bill-trend-up
+      .stat-content
+        span.stat-label إجمالي الإيرادات
+        strong.stat-value= (safeStats.totalRevenue || 0) + ' ج.م'
+        small.stat-hint من الطلبات المكتملة
 
-    // ===== Latest Orders =====
-    .dashboard-section
-      .section-header
-        h3 🧾 آخر الطلبات
-        if orders && orders.length > 0
-          button.btn-delete.btn-delete-all(onclick="deleteAllOrders()") 🗑️ حذف جميع الطلبات
+  // ================= QUICK ACTIONS =================
+  .quick-grid
+    a.quick-card(href="/admin/orders")
+      i.fa-solid.fa-basket-shopping
+      h3 إدارة الطلبات
+      p عرض وتعديل حالة الطلبات
 
-      table.orders-table
-        thead
-          tr
-            th رقم الطلب
-            th الاسم
-            th الهاتف
-            th العنوان
-            th المبلغ
-            th الحالة
-            th الدفع
-            th الإجراءات
-        tbody
-          if orders && orders.length > 0
-            - var limitedOrders = orders
-            each order, index in limitedOrders
-              tr
-                td #{index + 1}
-                td #{order.name}
-                td #{order.number}
-                td #{order.address}
-                td #{order.total} جنيه
-                td
-                  span.status(class=order.status) #{order.status || 'قيد التنفيذ'}
-                td #{order.paying}
-                td.actions-cell
-                  button.btn-small(onclick=`showOrderInvoice('${order._id}')`) عرض
-                  button.btn-delete.btn-delete-order(onclick=`deleteOrder('${order._id}')`) حذف
-          else
-            tr
-              td(colspan="7").no-data لا توجد طلبات حالياً
+    a.quick-card(href="/admin/products")
+      i.fa-solid.fa-box
+      h3 إدارة المنتجات
+      p إضافة وتعديل المنتجات
 
-    // باقي الكود زي ما هو...
-    // ===== Products Section =====
-    .dashboard-section
-      .section-header
-        h3 🍽️ المنتجات
-        button.btn-primary(onclick="openAddMealModal()") + إضافة منتج جديد
+    a.quick-card(href="/admin/offers")
+      i.fa-solid.fa-tags
+      h3 إدارة العروض
+      p إنشاء وإدارة الخصومات
 
-      table.products-table
-        thead
-          tr
-            th الصورة
-            th الاسم
-            th الفئة
-            th السعر
-            th الوصف
-            th الإجراءات
-        tbody
-          if meals && meals.length > 0
-            - var limitedMeals = meals
-            each meal in limitedMeals
-              tr(data-meal=JSON.stringify(meal))
-                td
-                  if meal.image
-                    img.product-thumbnail(src=meal.image alt=meal.name)
-                  else
-                    .no-image لا توجد صورة
-                td #{meal.name}
-                td #{meal.category}
-                td #{meal.price} جنيه
-                td.description-cell #{meal.description ? meal.description.substring(0, 50) + '...' : 'لا يوجد وصف'}
-                td.actions-cell
-                  button.btn-edit(data-id=meal._id data-action="editMeal") تعديل
-                  button.btn-delete(data-id=meal._id data-action="deleteMeal") حذف
-          else
-            tr
-              td(colspan="6").no-data لا توجد منتجات حالياً
+    a.quick-card(href="/admin/cashier/orders")
+      i.fa-solid.fa-cash-register
+      h3 الكاشير
+      p تنفيذ الطلبات بدون حذف
 
-
-    // ===== Offers Section =====
-    .dashboard-section
-      .section-header
-        h3 🎁 العروض
-        button.btn-primary(onclick="openAddOfferModal()") + إضافة عرض جديد
-
-      table.products-table
-        thead
-          tr
-            th الصورة
-            th العنوان
-            th السعر القديم
-            th السعر الجديد
-            th الوصف
-            th الإجراءات
-        tbody
-          if offers && offers.length > 0
-            - var limitedOffers = offers
-            each offer in limitedOffers
-              tr(data-offer=JSON.stringify(offer))
-                td
-                  if offer.image
-                    img.product-thumbnail(src=offer.image alt=offer.title)
-                  else
-                    .no-image لا توجد صورة
-                td #{offer.name}
-                td
-                  if offer.price
-                    span.old-price #{offer.price} جنيه
-                  else
-                    | -
-                td
-                  if offer.newprice
-                    span.new-price #{offer.newprice} جنيه
-                  else
-                    | -
-                td.description-cell #{offer.description ? offer.description.substring(0, 50) + '...' : 'لا يوجد وصف'}
-                td.actions-cell
-                  button.btn-edit(data-id=offer._id data-action="editOffer") تعديل
-                  button.btn-delete(data-id=offer._id data-action="deleteOffer") حذف
-          else
-            tr
-              td(colspan="6").no-data لا توجد عروض حالياً
-
-      if offers && offers.length > 10
-        .view-more
-          a.btn-secondary(href="/admin/offers") عرض جميع العروض (#{offers.length})
-
-  // باقي الـ Modals زي ما هم...
-  #addMealModal.modal
-    .modal-content
-      .modal-header
-        h3 إضافة منتج جديد
-        span.close(onclick="closeModal('addMealModal')") ×
-      form#addMealForm(onsubmit="addMeal(event)")
-        .form-group
-          label(for="addMealName") اسم المنتج
-          input#addMealName(type="text" required placeholder="أدخل اسم المنتج")
-
-        .form-group
-          label(for="addMealCategory") الصنف
-          input#addMealCategory(type="text" required placeholder="أدخل اسم الصنف (مثال: مشاوي، محاشي، إلخ)")
-
-        .form-group
-          label(for="addMealPrice") السعر
-          input#addMealPrice(type="number" step="0.01" required placeholder="أدخل السعر")
-
-        .form-group
-          label(for="addMealDescription") الوصف
-          textarea#addMealDescription(rows="3" placeholder="أدخل وصف المنتج (اختياري)")
-
-        .form-group
-          label(for="addMealImage") رابط الصورة
-          input#addMealImage(type="url" placeholder="أدخل رابط الصورة" oninput="updateImagePreview('addMealImage', 'addMealImagePreview')")
-          img#addMealImagePreview.image-preview(style="display:none")
-
-        .form-actions
-          button.btn-primary(type="submit") إضافة
-          button.btn-secondary(type="button" onclick="closeModal('addMealModal')") إلغاء
-
-  #editMealModal.modal
-    .modal-content
-      .modal-header
-        h3 تعديل المنتج
-        span.close(onclick="closeModal('editMealModal')") ×
-      form#editMealForm(onsubmit="updateMeal(event)")
-        input#editMealId(type="hidden")
-
-        .form-group
-          label(for="editMealName") اسم المنتج
-          input#editMealName(type="text" required)
-
-        .form-group
-          label(for="editMealCategory") الفئة
-          input#editMealCategory(type="text" required placeholder="أدخل اسم الفئة")
-
-        .form-group
-          label(for="editMealPrice") السعر
-          input#editMealPrice(type="number" step="0.01" required)
-
-        .form-group
-          label(for="editMealDescription") الوصف
-          textarea#editMealDescription(rows="3")
-
-        .form-group
-          label(for="editMealImage") رابط الصورة
-          input#editMealImage(type="url" oninput="updateImagePreview('editMealImage', 'editMealImagePreview')")
-          img#editMealImagePreview.image-preview
-
-        .form-actions
-          button.btn-primary(type="submit") حفظ التعديلات
-          button.btn-secondary(type="button" onclick="closeModal('editMealModal')") إلغاء
-
-  #addOfferModal.modal
-    .modal-content
-      .modal-header
-        h3 إضافة عرض جديد
-        span.close(onclick="closeModal('addOfferModal')") ×
-      form#addOfferForm(onsubmit="addOffer(event)")
-        .form-group
-          label(for="addOfferTitle") عنوان العرض
-          input#addOfferTitle(type="text" required placeholder="أدخل عنوان العرض")
-
-        .form-group
-          label(for="addOfferPrice") السعر القديم
-          input#addOfferPrice(type="number" step="0.01" required placeholder="أدخل السعر القديم")
-
-        .form-group
-          label(for="addOfferNewPrice") السعر الجديد (بعد الخصم)
-          input#addOfferNewPrice(type="number" step="0.01" placeholder="أدخل السعر الجديد (اختياري)")
-
-        .form-group
-          label(for="addOfferDescription") الوصف
-          textarea#addOfferDescription(rows="3" placeholder="أدخل وصف العرض (اختياري)")
-
-        .form-group
-          label(for="addOfferImage") رابط الصورة
-          input#addOfferImage(type="url" placeholder="أدخل رابط الصورة" oninput="updateImagePreview('addOfferImage', 'addOfferImagePreview')")
-          img#addOfferImagePreview.image-preview(style="display:none")
-
-        .form-actions
-          button.btn-primary(type="submit") إضافة
-          button.btn-secondary(type="button" onclick="closeModal('addOfferModal')") إلغاء
-
-  #editOfferModal.modal
-    .modal-content
-      .modal-header
-        h3 تعديل العرض
-        span.close(onclick="closeModal('editOfferModal')") ×
-      form#editOfferForm(onsubmit="updateOffer(event)")
-        input#editOfferId(type="hidden")
-
-        .form-group
-          label(for="editOfferTitle") عنوان العرض
-          input#editOfferTitle(type="text" required)
-
-        .form-group
-          label(for="editOfferPrice") السعر القديم
-          input#editOfferPrice(type="number" step="0.01" required)
-
-        .form-group
-          label(for="editOfferNewPrice") السعر الجديد (بعد الخصم)
-          input#editOfferNewPrice(type="number" step="0.01")
-
-        .form-group
-          label(for="editOfferDescription") الوصف
-          textarea#editOfferDescription(rows="3")
-
-        .form-group
-          label(for="editOfferImage") رابط الصورة
-          input#editOfferImage(type="url" oninput="updateImagePreview('editOfferImage', 'editOfferImagePreview')")
-          img#editOfferImagePreview.image-preview
-
-        .form-actions
-          button.btn-primary(type="submit") حفظ التعديلات
-          button.btn-secondary(type="button" onclick="closeModal('editOfferModal')") إلغاء
-
-  #orderInvoiceModal.modal
-    .modal-content.invoice-modal
-      .modal-header
-        h3 📄 فاتورة الطلب
-        .invoice-actions
-          button.btn-print(onclick="printInvoice()") 🖨️ طباعة
-          span.close(onclick="closeModal('orderInvoiceModal')") ×
-
-      #invoiceContent.invoice-content
-
-  script(src="/js/admin.js")

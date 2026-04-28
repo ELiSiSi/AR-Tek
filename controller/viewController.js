@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-import Meal from '../models/mealModel.js';
+import Product from '../models/productModel.js';
 import Offer from '../models/offerModel.js';
  import AppError from '../utils/appError.js';
 
@@ -8,9 +8,9 @@ import Offer from '../models/offerModel.js';
 // homepage -----------------------------------------------------------------------------------
 export const homepage = async (req, res, next) => {
   try {
-    const meals = await Meal.find();
+    const products = await Product.find();
     res.status(200).render('home', {
-      meals,
+      products,
       title: 'Home',
     });
   } catch (err) {
@@ -18,16 +18,48 @@ export const homepage = async (req, res, next) => {
   }
 };
 
-//  menupage -----------------------------------------------------------------------------------
-export const menupage = async (req, res, next) => {
+//  productspage -----------------------------------------------------------------------------------
+export const productspage = async (req, res, next) => {
   try {
-    const meals = await Meal.find();
-    res.status(200).render('menu', {
-      meals,
-      title: 'Menu',
+    const Offers = await Offer.find();
+    const products = await Product.find();
+    res.status(200).render('products', {
+      products,
+      Offers,
+      title: 'Products',
     });
   } catch (err) {
     return next(new AppError('No document found with that ID', 404));
+  }
+};
+
+// item page -----------------------------------------------------------------------------------
+export const itemPage = async (req, res, next) => {
+  try {
+    const item = await Product.findOne({ slug: req.params.slug });
+
+    if (!item) {
+      return next(new AppError('المنتج غير موجود', 404));
+    }
+
+    let ProCat = await Product.find({
+  category: item.category,
+  _id: { $ne: item._id },
+}).limit(4);
+
+    if (!ProCat || ProCat.length === 0) {
+      ProCat = await Product.find({
+        _id: { $ne: item._id },
+      }).limit(4);
+    }
+
+    res.status(200).render('item', {
+      item,
+      ProCat,
+      title: item.name,
+    });
+  } catch (err) {
+    return next(err);
   }
 };
 
@@ -42,7 +74,7 @@ export const menupage = async (req, res, next) => {
       title: 'Offers',
     });
   } catch (err) {
-    console.error('❌ Error:', err); // 👈 وهذا
+    console.error('❌ Error:', err);
     return next(new AppError('Failed to load offers page', 500));
   }
 };

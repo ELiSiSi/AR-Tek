@@ -1,31 +1,227 @@
 extends base
 
 block content
-  section.page-header
-    .container
-      h1 العروض 🎉
-      p عرض مختلف كل يوم من أيام الأسبوع – استمتع بأشهى الأطباق بأسعار مميزة!
 
-  section.products-section.offers-section
+  - const safeOffers = Array.isArray(offersList) ? offersList : []
+
+  .offers-filter-bar
     .container
-      #offersGrid.products-grid
-        if offersList && offersList.length
-          - var i = 0
-          while i < offersList.length
-            - var currentOffer = offersList[i++]
-            .product-card(data-category=currentOffer.category)
-              .product-image
-                img(src=currentOffer.image, alt=currentOffer.name)
-              .product-info
-                h3= currentOffer.name
-                p= currentOffer.description
-              .product-footer
-                .product-price
-                  span.old-price= currentOffer.price
-                  span.price= currentOffer.newprice
-                  span.currency جنيه
-                button.btn.btn-add-cart(data-name=currentOffer.name data-price=currentOffer.newprice data-image=currentOffer.image) أضف للسلة
+      .filter-inner
+
+        .filter-tabs
+          .section-header(data-reveal)
+            .section-label كل العروض · All Offers
+            h2.section-title تصفح جميع العروض
+            p.section-subtitle أفضل الخصومات المتاحة الآن
+
+        .filter-sort
+          select#sort-select
+            option(value="discount") الأعلى خصماً
+            option(value="price-low") الأقل سعراً
+            option(value="price-high") الأعلى سعراً
+
+  section.section.all-offers-section
+    .container
+      .all-offers-grid#offers-grid
+
+        if safeOffers.length
+
+          each offer in safeOffers
+
+            - const oldPrice = Number(offer.price || 0)
+            - const newPrice = Number(offer.newprice || 0)
+            - const discount = oldPrice > newPrice ? Math.round(((oldPrice - newPrice) / oldPrice) * 100) : 0
+
+            //- ✅ أضفت data attributes عشان نقدر نجيب البيانات لما نضغط Add
+            .offer-card(
+              data-id=offer._id || offer.id
+              data-name=offer.name
+              data-price=newPrice
+              data-oldprice=oldPrice
+              data-image=offer.image
+              data-discount=discount
+            )
+
+              .offer-card-img
+                .offer-img-ph
+                  img(
+                    src=offer.image || '/img/logo.png'
+                    alt=offer.name
+                  )
+
+                if discount > 0
+                  .offer-disc= '-' + discount + '%'
+
+              .offer-card-body
+
+                p.offer-cat عرض خاص
+
+                h3.offer-name= offer.name
+
+                if offer.description
+                  p.offer-desc= offer.description
+
+                .offer-price-row
+                  span.offer-price= newPrice.toLocaleString('ar-EG') + ' جنيه'
+
+                  if oldPrice > newPrice
+                    span.offer-old= oldPrice.toLocaleString('ar-EG') + ' جنيه'
+
+                //- ✅ أضفت data attributes على الزر نفسه
+                button.btn.btn-primary.btn-full.offer-add(
+                  type="button"
+                  data-id=offer._id || offer.id
+                  data-name=offer.name
+                  data-price=newPrice
+                  data-image=offer.image
+                  data-category="عروض"
+                ) أضف للسلة
+
         else
-          p.no-offers لا توجد عروض متاحة حالياً
-      .section-cta
-        a.btn.btn-outline(href="/review")     ادخل قيم المطعم
+
+          .empty-state
+            h3 لا توجد عروض حالياً
+            p سيتم إضافة عروض قريباً
+
+  // ✅ Toast Notification (بدل الـ Alert)
+  .toast#cart-toast(style="display:none")
+    .toast-content
+      span.toast-icon ✓
+      span.toast-message تمت الإضافة للسلة
+
+  script.
+    const CART_KEY = 'cart';
+    const grid = document.querySelector("#offers-grid");
+    const sortSelect = document.querySelector("#sort-select");
+    const toast = document.getElementById("cart-toast");
+
+    // ==================== CART FUNCTIONS ====================
+
+    function getCart() {
+      try {
+        const stored = localStorage.getItem(CART_KEY);
+        const parsed = stored ? JSON.parse(stored) : [];
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (err) {
+        return [];
+      }
+    }
+
+    function saveCart(cart) {
+      localStorage.setItem(CART_KEY, JSON.stringify(cart));
+      updateCartBadge();
+    }
+
+    function updateCartBadge() {
+      const cart = getCart();
+      const totalQty = cart.reduce((sum, item) => sum + Number(item.qty || 1), 0);
+      const badge = document.querySelector('.cart-count');
+
+      if (badge) {
+        badge.textContent = totalQty;
+        badge.classList.toggle('has-items', totalQty > 0);
+      }
+    }
+
+    function addToCart(productData) {
+      const cart = getCart();
+
+      // ✅ نشوف لو المنتج موجود نزود الكمية
+      const existingIndex = cart.findIndex(item =>
+        String(item.id || item._id) === String(productData.id)
+      );
+
+      if (existingIndex >= 0) {
+        cart[existingIndex].qty = (cart[existingIndex].qty || 1) + 1;
+      } else {
+        cart.push({
+          id: String(productData.id),
+          name: productData.name,
+          price: Number(productData.price),
+          image: productData.image || '',
+          category: productData.category || 'عروض',
+          qty: 1
+        });
+      }
+
+      saveCart(cart);
+      showToast('تمت الإضافة للسلة بنجاح');
+    }
+
+    // ==================== TOAST ====================
+
+    function showToast(message) {
+      const msgEl = toast.querySelector('.toast-message');
+      if (msgEl) msgEl.textContent = message;
+
+      toast.style.display = 'flex';
+      toast.classList.add('show');
+
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => {
+          toast.style.display = 'none';
+        }, 300);
+      }, 2000);
+    }
+
+    // ==================== SORTING ====================
+
+    function sortCards(type) {
+      const cards = Array.from(document.querySelectorAll(".offer-card"));
+
+      cards.sort((a, b) => {
+        const priceA = Number(a.dataset.price || 0);
+        const priceB = Number(b.dataset.price || 0);
+        const disA = Number(a.dataset.discount || 0);
+        const disB = Number(b.dataset.discount || 0);
+
+        if (type === "discount") return disB - disA;
+        if (type === "price-low") return priceA - priceB;
+        if (type === "price-high") return priceB - priceA;
+        return 0;
+      });
+
+      cards.forEach(card => grid.appendChild(card));
+    }
+
+    sortSelect?.addEventListener("change", e => {
+      sortCards(e.target.value);
+    });
+
+    // ==================== ADD TO CART BUTTONS ====================
+
+    document.querySelectorAll(".offer-add").forEach(btn => {
+      btn.addEventListener("click", function(e) {
+        e.preventDefault(); // ✅ نمنع أي behavior افتراضي
+
+        // ✅ نجيب البيانات من الـ data attributes
+        const productData = {
+          id: this.dataset.id,
+          name: this.dataset.name,
+          price: this.dataset.price,
+          image: this.dataset.image,
+          category: this.dataset.category
+        };
+
+        // ✅ نضيف للسلة
+        addToCart(productData);
+
+        // ✅ نغير حالة الزر مؤقتاً
+        const originalText = this.innerHTML;
+        this.innerHTML = "تمت الإضافة ✓";
+        this.disabled = true;
+        this.classList.add('added');
+
+        setTimeout(() => {
+          this.innerHTML = originalText;
+          this.disabled = false;
+          this.classList.remove('added');
+        }, 1500);
+      });
+    });
+
+    // ==================== INIT ====================
+
+    sortCards("discount");
+    updateCartBadge();

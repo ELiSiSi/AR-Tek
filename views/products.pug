@@ -1,0 +1,274 @@
+extends base
+
+block content
+
+  //════════════════════════════════════
+  // TOP BAR
+  //════════════════════════════════════
+  .top-contact-bar
+    .container
+      a.top-contact-link(
+        href="https://wa.me/201063777925"
+        target="_blank"
+      )
+        span للاستفسار: 01063777925
+
+  //════════════════════════════════════
+  // HERO
+  //════════════════════════════════════
+  section.products-hero
+    .container
+      .products-hero-inner
+        span.section-label AR TEK · Products
+        h1.section-title اكتشف أحدث المنتجات التقنية
+
+        .filter-sort
+          label.sr-only(for="sort-select") ترتيب حسب
+          select#sort-select
+            option(value="price-asc") الأقل سعراً
+            option(value="price-desc") الأعلى سعراً
+            option(value="newest") الأحدث
+
+  //════════════════════════════════════
+  // FILTERS
+  //════════════════════════════════════
+  section.section
+    .container
+      .filters-scroll
+        button.filter-btn.active(type="button" data-filter="all") كل المنتجات
+
+        - const categories = [...new Set(products.map(p => p.category))]
+        each cat in categories
+          button.filter-btn(type="button" data-filter=cat)= cat
+
+  //════════════════════════════════════
+  // PRODUCTS GRID
+  //════════════════════════════════════
+  section.section
+    .container
+      .products-grid
+
+        each product in products
+          .product-card(
+            data-category=product.category
+            data-price=product.price
+            data-discount=product.discount
+            data-date=product.createdAt
+          )
+
+            a.product-card-img(href=`/products/${product.slug}`)
+              img(src=product.image alt=product.name)
+
+              .product-badges
+                if product.isNew
+                  span.tag.tag-new جديد
+                if product.discount
+                  span.tag.tag-sale خصم
+
+            .product-card-body
+              span.product-cat #{product.category}
+
+              h3.product-name
+                a(href=`/products/${product.slug}`) #{product.name}
+
+              p.product-name-en #{product.name_en}
+
+              .product-price-row
+                span.product-price #{product.price} جنيه
+                if product.oldPrice
+                  span.product-price-old #{product.oldPrice}
+
+              .product-actions
+                button.btn.btn-primary.add-to-cart(
+                  type="button"
+                  data-id=product._id
+                  data-name=product.name
+                  data-price=product.price
+                  data-image=product.image
+                  data-category=product.category
+                )
+                  | إضافة للسلة
+
+  //════════════════════════════════════
+  // CTA
+  //════════════════════════════════════
+  if Offers.length > 0
+     section.section
+      .container
+        .newsletter-box
+          h2 عروض حصرية يوميًا
+          p تابع أحدث المنتجات والعروض
+
+  // ✅ Toast Notification (بدل الـ Alert)
+  .toast#cart-toast(style="display:none")
+    .toast-content
+      span.toast-icon ✓
+      span.toast-message تمت الإضافة للسلة
+
+  //════════════════════════════════════
+  // SCRIPT
+  //════════════════════════════════════
+  script.
+    const CART_KEY = 'cart';
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    const sortSelect = document.querySelector('#sort-select');
+    const grid = document.querySelector('.products-grid');
+    const toast = document.getElementById("cart-toast");
+
+    // ==================== TOAST ====================
+
+    function showToast(message) {
+      const msgEl = toast.querySelector('.toast-message');
+      if (msgEl) msgEl.textContent = message;
+
+      toast.style.display = 'flex';
+      // force reflow
+      void toast.offsetWidth;
+      toast.classList.add('show');
+
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => {
+          toast.style.display = 'none';
+        }, 300);
+      }, 2000);
+    }
+
+    // ==================== CART FUNCTIONS ====================
+
+    function getCart() {
+      try {
+        const stored = localStorage.getItem(CART_KEY);
+        const parsed = stored ? JSON.parse(stored) : [];
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (err) {
+        return [];
+      }
+    }
+
+    function saveCart(cart) {
+      localStorage.setItem(CART_KEY, JSON.stringify(cart));
+      updateCartBadge();
+    }
+
+    function updateCartBadge() {
+      const cart = getCart();
+      const totalQty = cart.reduce((sum, item) => sum + Number(item.qty || 1), 0);
+      const badge = document.querySelector('.cart-count');
+
+      if (badge) {
+        badge.textContent = totalQty;
+        badge.classList.toggle('has-items', totalQty > 0);
+      }
+    }
+
+    function addToCart(productData) {
+      const cart = getCart();
+
+      const existingIndex = cart.findIndex(item =>
+        String(item.id || item._id) === String(productData.id)
+      );
+
+      if (existingIndex >= 0) {
+        cart[existingIndex].qty = (cart[existingIndex].qty || 1) + 1;
+      } else {
+        cart.push({
+          id: String(productData.id),
+          name: productData.name,
+          price: Number(productData.price),
+          image: productData.image || '',
+          category: productData.category || 'General',
+          qty: 1
+        });
+      }
+
+      saveCart(cart);
+      showToast('تمت الإضافة للسلة بنجاح');
+    }
+
+    // ==================== FILTER ====================
+
+    filterButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const filter = btn.dataset.filter;
+        const cards = document.querySelectorAll('.product-card');
+
+        cards.forEach(card => {
+          const category = card.dataset.category;
+
+          if (filter === 'all' || category === filter) {
+            card.style.display = 'block';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      });
+    });
+
+    // ==================== SORT ====================
+
+    function sortCards(type) {
+      const cards = Array.from(document.querySelectorAll('.product-card'));
+
+      cards.sort((a, b) => {
+        const priceA = Number(a.dataset.price);
+        const priceB = Number(b.dataset.price);
+
+        const discountA = Number(a.dataset.discount || 0);
+        const discountB = Number(b.dataset.discount || 0);
+
+        const dateA = new Date(a.dataset.date);
+        const dateB = new Date(b.dataset.date);
+
+        if (type === "price-asc") return priceA - priceB;
+        if (type === "price-desc") return priceB - priceA;
+        if (type === "newest") return dateB - dateA;
+        if (type === "discount") return discountB - discountA;
+
+        return 0;
+      });
+
+      cards.forEach(card => grid.appendChild(card));
+    }
+
+    sortSelect?.addEventListener('change', (e) => {
+      sortCards(e.target.value);
+    });
+
+    // ==================== ADD TO CART ====================
+
+    document.querySelectorAll('.add-to-cart').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+
+        const product = {
+          id: this.dataset.id,
+          name: this.dataset.name,
+          price: this.dataset.price,
+          image: this.dataset.image,
+          category: this.dataset.category
+        };
+
+        addToCart(product);
+
+        // ✅ تغيير حالة الزر مؤقتاً
+        const originalText = this.innerHTML;
+        this.innerHTML = "تمت الإضافة ✓";
+        this.disabled = true;
+        this.classList.add('added');
+
+        setTimeout(() => {
+          this.innerHTML = originalText;
+          this.disabled = false;
+          this.classList.remove('added');
+        }, 1500);
+      });
+    });
+
+    // ==================== INIT ====================
+
+    sortCards("price-asc");
+    updateCartBadge();

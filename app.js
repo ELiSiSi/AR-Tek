@@ -13,7 +13,7 @@ import xss from 'xss-clean';
 dotenv.config();
 
 import adminRouter from './routes/adminRouter.js';
-import mealRouter from './routes/mealRouter.js';
+import productRouter from './routes/productRouter.js';
 import offerRouter from './routes/offerRouter.js';
 import orderRouter from './routes/orderRouter.js';
 import viewRouter from './routes/viewRouter.js';
@@ -84,13 +84,17 @@ app.use(compression());
 
 app.get('/.well-known/*', (req, res) => res.status(204).end());
 
-app.use('/api/v1/meal', mealRouter);
+app.use('/api/v1/product', productRouter);
 app.use('/api/v1/offer', offerRouter);
 app.use('/api/v1/order', orderRouter);
 app.use('/api/v1/review', reviewRouter);
 app.use('/', viewRouter);
 app.use('/admin', adminRouter);
+import globalErrorHandler from './utils/errorHandler.js';
 
+// ... كل الـ routes
+
+app.use(globalErrorHandler);
 app.use((err, req, res, next) => {
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'error';

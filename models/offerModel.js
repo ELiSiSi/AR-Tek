@@ -8,12 +8,13 @@ const offerSchema = new mongoose.Schema(
       required: [true, 'Offer must have a name'],
       trim: true,
       unique: true,
-
+      index: true,
     },
     slug: {
       type: String,
       lowercase: true,
       unique: true,
+      index: true,
     },
     description: {
       type: String,
@@ -22,7 +23,7 @@ const offerSchema = new mongoose.Schema(
     price: {
       type: Number,
       required: [true, 'Meal must have a price'],
-        },
+    },
     newprice: {
       type: Number,
       required: [true, 'Offer must have a new price'],
@@ -31,7 +32,6 @@ const offerSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-
   },
   { timestamps: true }
 );
@@ -43,8 +43,5 @@ offerSchema.pre('save', function (next) {
   next();
 });
 
-// ✅ شيل الـ indexes دي - مش محتاجها
-offerSchema.index({ name: 1 });
-offerSchema.index({ slug: 1 });
 const Offer = mongoose.model('Offer', offerSchema);
 export default Offer;

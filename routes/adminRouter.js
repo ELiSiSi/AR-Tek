@@ -1,32 +1,40 @@
-import express from "express";
-
+import express from 'express';
+import dotenv from 'dotenv';
+dotenv.config();
 const router = express.Router();
 
 import {
-  loginAdmin,
   adminPage,
-  chefPage,
-  waitersPage,
+  productPage,
   cashierPage,
+  offerPage,
   AllReviews,
+  orderPage,
 } from '../controller/adminController.js';
 
+// ===============================
 // Admin Routes
-router.get('/login', loginAdmin);
+// ===============================
 
+// Cashier
+router.get(`/cashier/${process.env.CASHIER_PASSWORD}`, cashierPage);
 
-router.get(`/chef/:password`, chefPage);
+// Products
+router.get(`/products/${process.env.ADMIN_PASSWORD}`, productPage);
 
-router.get(`/waiter/:password`, waitersPage);
+// Offers
+router.get(`/offers/${process.env.ADMIN_PASSWORD}`, offerPage);
 
-router.get(`/cashier/:password`, cashierPage);
+// Orders
+router.get(`/orders/${process.env.ADMIN_PASSWORD}`, orderPage);
 
-router.get(`/dashboard/:password/admin/juewsorfewofsihgnfvijsdgjsdjkigfsdgfierhiugfheruiwfierugf`, adminPage);
+// Dashboard
+router.get(`/dashboard/${process.env.ADMIN_PASSWORD}`, adminPage);
 
-router.get(
-  `/reviews/:password/admin/juewsorfewofsihgnfvijsdgjsdjkigfsdgfierhiugfheruiwfierugf`,
-  AllReviews
-);
-
+// Reviews (if needed later)
+// router.get(
+//   `/reviews/${process.env.ADMIN_PASSWORD}`,
+//   AllReviews
+// );
 
 export default router;

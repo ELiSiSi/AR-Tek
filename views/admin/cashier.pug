@@ -1,277 +1,552 @@
-extends base
+doctype html
+html(lang="ar" dir="rtl")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0")
+    title نظام الكاشير
 
-block content
-  .allBills
-    if orders && orders.length > 0
-      each order in orders
-        .invoice
-          .invoice-header
-            h2 مطعم شوية
-            p.invoice-date 📅 التاريخ: #{new Date(order.createdAt || Date.now()).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
-            p.invoice-number رقم الطلب: #{order.numberOrder || 'غير متوفر'}
+    link(rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css")
 
-          .invoice-section
-            h3 📍 بيانات العميل
-            if order.name && order.name !== ''
-              .invoice-row
-                span.label الاسم:
-                span.value #{order.name}
-              .invoice-row
-                span.label الهاتف:
-                span.value #{order.number || 'غير محدد'}
-              .invoice-row
-                span.label العنوان:
-                span.value #{order.address || 'غير محدد'}
-              if order.notes && order.notes !== ""
-                .invoice-row
-                  span.label ملحوظة:
-                  span.value #{order.notes}
-            else
-              .invoice-row
-                span.label رقم الطاوله:
-                span.value #{order.address || 'غير محدد'}
-              if order.notes && order.notes !== ""
-                .invoice-row
-                  span.label ملحوظة:
-                  span.value #{order.notes}
+    style.
+      /* ===== RESET & BASE ===== */
+      * { box-sizing: border-box; }
 
-          .invoice-section
-            h3 🛒 تفاصيل الطلب
-            table.invoice-table
-              thead
-                tr
-                  th المنتج
-                  th الكمية
-                  th السعر
-                  th الإجمالي
-              tbody
-                if order.cart && order.cart.length > 0
-                  each item in order.cart
-                    tr
-                      td #{item.name || 'غير محدد'}
-                      td #{item.quantity || 1}
-                      td #{(item.price || 0).toFixed(2)} جنيه
-                      td #{((item.quantity || 1) * (item.price || 0)).toFixed(2)} جنيه
-                else
-                  tr
-                    td(colspan="4", style="text-align:center; color:#999;")
-                      | لا توجد عناصر في الطلب
-
-          .invoice-footer
-            .invoice-total
-              span.total-label 💰 الإجمالي الكلي:
-              span.total-value #{order.total || 0} جنيه
-            .invoice-status
-              span.label حالة الطلب:
-              span.status-badge(class=order.status || 'pending')
-                | #{order.status || 'قيد الانتظار'}
-
-          .invoice-actions
-            button.action-btn.print(type="button" data-id=order._id)
-              i.fa.fa-print
-              | طباعة
-            button.action-btn.done(type="button" data-id=order._id)
-              i.fa.fa-check
-              | تم الدفع
-            button.action-btn.cancel(type="button" data-id=order._id)
-              i.fa.fa-times
-              | لم يتم
-    else
-      p(style="text-align:center; color:#999; margin-top:20px;")
-        | لا توجد طلبات لعرضها
-
-
-  script.
-    document.addEventListener('click', async (e) => {
-      const btn = e.target.closest('.action-btn');
-      if (!btn) return;
-
-      const orderId = btn.dataset.id;
-
-      // معالجة زر الطباعة
-      if (btn.classList.contains('print')) {
-        printInvoice(orderId);
-        return;
+      body {
+        margin: 0;
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        background: #0f172a;
+        color: #e2e8f0;
+        line-height: 1.6;
       }
 
-      let paying = 'pending';
-      if (btn.classList.contains('done')) paying = true;
-      if (btn.classList.contains('cancel')) paying = false;
+      /* ===== HEADER ===== */
+      .topbar {
+        background: #1e293b;
+        padding: 20px 30px;
+        font-size: 20px;
+        font-weight: 700;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 2px solid #334155;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
+      }
 
-      try {
-        const res = await fetch(`/api/v1/order/${orderId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ paying })
+      .badge {
+        background: #f59e0b;
+        color: #1e293b;
+        padding: 6px 14px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+      }
+
+      /* ===== GRID ===== */
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+        gap: 20px;
+        padding: 25px;
+        max-width: 1600px;
+        margin: 0 auto;
+      }
+
+      /* ===== CARD ===== */
+      .card {
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 16px;
+        padding: 20px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .card:hover {
+        transform: translateY(-5px);
+        border-color: #3b82f6;
+        box-shadow: 0 10px 25px -5px rgba(59,130,246,0.2);
+      }
+
+      .head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #334155;
+      }
+
+      .head h3 {
+        margin: 0;
+        font-size: 18px;
+        color: #f8fafc;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .head h3::before {
+        content: '📋';
+        font-size: 20px;
+      }
+
+      /* ===== INFO ===== */
+      .info {
+        display: grid;
+        gap: 10px;
+        font-size: 14px;
+        color: #cbd5e1;
+      }
+
+      .info-row {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        padding: 4px 0;
+      }
+
+      .info b {
+        color: #94a3b8;
+        min-width: 70px;
+        font-weight: 600;
+        font-size: 13px;
+      }
+
+      .info span {
+        color: #f1f5f9;
+        font-weight: 500;
+      }
+
+      /* ===== ITEMS ===== */
+      .items {
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 2px solid #334155;
+        flex-grow: 1;
+      }
+
+      .items h4 {
+        margin: 0 0 12px 0;
+        font-size: 14px;
+        color: #94a3b8;
+        font-weight: 600;
+      }
+
+      .items ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .items li {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 12px;
+        font-size: 14px;
+        background: #0f172a;
+        border-radius: 8px;
+        margin-bottom: 6px;
+        border: 1px solid #1e293b;
+      }
+
+      .items li .item-name {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .items li .item-name::before {
+        content: '•';
+        color: #3b82f6;
+        font-size: 20px;
+        line-height: 0;
+      }
+
+      .items li .item-price {
+        font-weight: 600;
+        color: #22c55e;
+        font-family: 'Courier New', monospace;
+        font-size: 15px;
+      }
+
+      .no-items {
+        text-align: center;
+        color: #64748b;
+        padding: 20px;
+        font-style: italic;
+      }
+
+      /* ===== TOTAL ===== */
+      .total {
+        margin-top: 15px;
+        padding: 15px;
+        background: #0f172a;
+        border-radius: 12px;
+        border: 2px solid #22c55e;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 20px;
+        font-weight: 700;
+        color: #22c55e;
+      }
+
+      .total::before {
+        content: '💰';
+        font-size: 24px;
+      }
+
+      /* ===== ACTIONS ===== */
+      .actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 15px;
+      }
+
+      button {
+        border: none;
+        padding: 12px 16px;
+        border-radius: 10px;
+        cursor: pointer;
+        flex: 1;
+        font-size: 14px;
+        font-weight: 600;
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        align-items: center;
+        transition: all 0.2s;
+        font-family: inherit;
+      }
+
+      .done {
+        background: #22c55e;
+        color: #fff;
+      }
+
+      .done:hover {
+        background: #16a34a;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(34,197,94,0.3);
+      }
+
+      .print {
+        background: #3b82f6;
+        color: #fff;
+      }
+
+      .print:hover {
+        background: #2563eb;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(59,130,246,0.3);
+      }
+
+      /* ===== PRINT STYLES ===== */
+      @media print {
+        body { background: #fff !important; }
+        .card {
+          page-break-inside: avoid;
+          border: 1px solid #ddd !important;
+        }
+      }
+
+      /* ===== PRINT INVOICE MODAL ===== */
+      .print-overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.8);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+      }
+
+      .print-overlay.active { display: flex; }
+
+      .print-preview {
+        background: #fff;
+        color: #000;
+        width: 80mm; /* Thermal receipt width */
+        max-height: 90vh;
+        overflow-y: auto;
+        padding: 20px;
+        border-radius: 4px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        font-family: 'Courier New', monospace;
+      }
+
+      .print-preview-header {
+        text-align: center;
+        border-bottom: 2px dashed #000;
+        padding-bottom: 15px;
+        margin-bottom: 15px;
+      }
+
+      .print-preview-header h2 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: bold;
+      }
+
+      .print-preview-header p {
+        margin: 5px 0 0;
+        font-size: 12px;
+        color: #666;
+      }
+
+      .print-preview-body {
+        font-size: 13px;
+      }
+
+      .print-preview-body .print-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 0;
+        border-bottom: 1px dotted #ccc;
+      }
+
+      .print-preview-body .print-total {
+        margin-top: 15px;
+        padding-top: 10px;
+        border-top: 2px solid #000;
+        font-size: 16px;
+        font-weight: bold;
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .print-preview-footer {
+        margin-top: 20px;
+        text-align: center;
+        font-size: 12px;
+        color: #666;
+        border-top: 2px dashed #000;
+        padding-top: 15px;
+      }
+
+      .print-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+      }
+
+      .print-actions button {
+        flex: 1;
+        padding: 10px;
+        border-radius: 6px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+
+      .btn-print-now {
+        background: #000;
+        color: #fff;
+        border: none;
+      }
+
+      .btn-close {
+        background: #e2e8f0;
+        color: #000;
+        border: 1px solid #cbd5e1;
+      }
+
+  body
+
+    .topbar
+      div 🧾 نظام الكاشير
+      span.badge طلبات جديدة
+
+    .grid
+      each order in orders
+
+        .card
+          .head
+            h3 فاتورة
+            span.badge ##{order.numberOrder || order._id}
+
+          .info
+            .info-row
+              b العميل:
+              span #{order.name || '---'}
+
+            .info-row
+              b الهاتف:
+              span #{order.number || '---'}
+
+            .info-row
+              b العنوان:
+              span #{order.address || '---'}
+
+            if order.notes
+              .info-row
+                b ملاحظات:
+                span #{order.notes}
+
+          .items
+            h4 🛒 المنتجات:
+            if order.cart && order.cart.length
+              ul
+                each item in order.cart
+                  li
+                    span.item-name #{item.name} × #{item.quantity}
+                    span.item-price #{item.price} ج.م
+            else
+              p.no-items لا يوجد منتجات
+
+          .total
+            span الإجمالي
+            span #{order.total || 0} ج.م
+
+          .actions
+            form(method="post", action=`/api/v1/order/${order._id}/done`)
+              button.done(type="submit")
+                i.fa-solid.fa-check
+                | تم الدفع
+
+            button.print(type="button" onclick="openPrintModal(this)")
+              i.fa-solid.fa-print
+              | طباعة
+
+    // Print Modal
+    .print-overlay#printOverlay
+      .print-preview
+        .print-preview-header
+          h2 فاتورة ضريبية
+          p رقم الطلب: #<span id="printOrderId"></span>
+          p التاريخ: <span id="printDate"></span>
+
+        .print-preview-body
+          .print-row
+            span العميل:
+            span#printCustomer ---
+          .print-row
+            span الهاتف:
+            span#printPhone ---
+          .print-row
+            span العنوان:
+            span#printAddress ---
+
+          div(style="margin: 15px 0; border-bottom: 1px dashed #000;")
+
+          #printItems
+
+        .print-preview-footer
+          p شكراً لتعاملكم معنا
+          //- p للاستفسار: 0123456789
+
+        .print-actions
+          button.btn-print-now(onclick="executePrint()")
+            i.fa-solid.fa-print
+            | طباعة الآن
+          button.btn-close(onclick="closePrintModal()")
+            i.fa-solid.fa-xmark
+            | إغلاق
+
+    script.
+      // Print Modal Functions
+      let currentCard = null;
+
+      function openPrintModal(btn) {
+        currentCard = btn.closest('.card');
+        const card = currentCard;
+
+        // Extract data
+        const orderId = card.querySelector('.badge').textContent.replace('#', '');
+        const customer = card.querySelector('.info-row:nth-child(1) span')?.textContent || '---';
+        const phone = card.querySelector('.info-row:nth-child(2) span')?.textContent || '---';
+        const address = card.querySelector('.info-row:nth-child(3) span')?.textContent || '---';
+
+        // Set header data
+        document.getElementById('printOrderId').textContent = orderId;
+        document.getElementById('printDate').textContent = new Date().toLocaleString('ar-EG');
+        document.getElementById('printCustomer').textContent = customer;
+        document.getElementById('printPhone').textContent = phone;
+        document.getElementById('printAddress').textContent = address;
+
+        // Build items list
+        const itemsList = card.querySelectorAll('.items li');
+        let itemsHTML = '';
+        let total = 0;
+
+        itemsList.forEach(item => {
+          const name = item.querySelector('.item-name')?.textContent || '';
+          const priceText = item.querySelector('.item-price')?.textContent || '0';
+          const price = parseFloat(priceText) || 0;
+          total += price;
+
+          itemsHTML += `
+            <div class="print-row">
+              <span>${name}</span>
+              <span>${priceText}</span>
+            </div>
+          `;
         });
 
-        if (res.ok) {
-          location.reload();
-        } else {
-          alert('حصل خطأ أثناء تحديث الحالة');
-        }
-      } catch (err) {
-        alert('مشكلة في الاتصال بالسيرفر');
-      }
-    });
-
-    // دالة الطباعة
-    function printInvoice(orderId) {
-      const invoice = document.querySelector(`[data-id="${orderId}"]`).closest('.invoice');
-
-      const printWindow = window.open('', '_blank', 'width=800,height=600');
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html dir="rtl" lang="ar">
-        <head>
-          <meta charset="UTF-8">
-          <title>فاتورة الطلب</title>
-          <style>
-            * {
-              margin: 0;
-              padding: 0;
-              box-sizing: border-box;
-              font-family: "Cairo", sans-serif;
-            }
-            body {
-              padding: 20px;
-              background: white;
-              text-align: right;
-              color: #000;
-            }
-            .invoice {
-              max-width: 800px;
-              margin: 0 auto;
-            }
-            .invoice-header {
-              text-align: center;
-              border-bottom: 3px solid #FF2400;
-              padding-bottom: 20px;
-              margin-bottom: 30px;
-            }
-            .invoice-header h2 {
-              font-size: 32px;
-              color: #FF2400;
-              margin-bottom: 10px;
-              text-align: center;
-            }
-            .invoice-date, .invoice-number {
-              text-align: center;
-              font-size: 14px;
-              color: #666;
-              margin: 5px 0;
-            }
-            .invoice-section {
-              text-align: right;
-              margin: 25px 0;
-              padding: 20px;
-              border: 2px solid #eee;
-              border-radius: 10px;
-            }
-            .invoice-section h3 {
-              text-align: right;
-              color: #FF2400;
-              margin-bottom: 15px;
-              font-size: 20px;
-            }
-            .invoice-row {
-              display: flex;
-              justify-content: flex-start;
-              gap: 10px;
-              padding: 8px 0;
-              border-bottom: 1px dotted #ddd;
-            }
-            .label {
-              font-weight: bold;
-              text-align: right;
-              color: #333;
-            }
-            .value {
-              color: #666;
-            }
-            .invoice-table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-top: 15px;
-            }
-            .invoice-table th {
-              background: #FF2400;
-              color: white;
-              padding: 12px;
-              text-align: center;
-            }
-            .invoice-table td {
-              padding: 12px;
-              text-align: center;
-              border-bottom: 1px solid #eee;
-            }
-            .invoice-footer {
-              margin-top: 30px;
-              padding: 20px;
-              background: #f9f9f9;
-              border-radius: 10px;
-            }
-            .invoice-total {
-              display: flex;
-              justify-content: flex-start;
-              gap: 10px;
-              font-size: 24px;
-              font-weight: bold;
-              color: #FF2400;
-              margin-bottom: 15px;
-            }
-            .invoice-status {
-              display: flex;
-              justify-content: flex-start;
-              gap: 10px;
-              align-items: center;
-            }
-            .status-badge {
-              padding: 8px 20px;
-              border-radius: 20px;
-              font-weight: bold;
-            }
-            .status-badge.pending { background-color: #ffc107; color: #222; }
-            .status-badge.processing { background-color: #0dcaf0; color: white; }
-            .status-badge.delivered, .status-badge.done { background-color: #28a745; color: white; }
-            .status-badge.cancelled, .status-badge.cancel { background-color: #dc3545; color: white; }
-            .invoice-notes {
-              text-align: center;
-              margin-top: 30px;
-              padding-top: 20px;
-              border-top: 2px dashed #ccc;
-              color: #666;
-            }
-            .invoice-notes p {
-              margin: 5px 0;
-            }
-            .invoice-actions {
-              display: none !important;
-            }
-            @media print {
-              body {
-                padding: 0;
-              }
-              .invoice-section {
-                page-break-inside: avoid;
-              }
-            }
-          </style>
-        </head>
-        <body>
-          ${invoice.outerHTML}
-          <div class="invoice-notes">
-            <p>🙏 شكراً لتعاملكم معنا</p>
-            <p>نتمنى لكم تجربة ممتعة وطعام شهي</p>
+        itemsHTML += `
+          <div class="print-total">
+            <span>الإجمالي:</span>
+            <span>${total} ج.م</span>
           </div>
-        </body>
-        </html>
-      `);
+        `;
 
-      printWindow.document.close();
-      printWindow.focus();
+        document.getElementById('printItems').innerHTML = itemsHTML;
 
-      setTimeout(() => {
-        printWindow.print();
-      }, 500);
-    }
+        // Show modal
+        document.getElementById('printOverlay').classList.add('active');
+      }
+
+      function closePrintModal() {
+        document.getElementById('printOverlay').classList.remove('active');
+        currentCard = null;
+      }
+
+      function executePrint() {
+        const printContent = document.querySelector('.print-preview').innerHTML;
+        const printWindow = window.open('', '', 'width=400,height=700');
+
+        printWindow.document.write(`
+          <html dir="rtl">
+            <head>
+              <title>فاتورة #${document.getElementById('printOrderId').textContent}</title>
+              <style>
+                body {
+                  font-family: 'Courier New', monospace;
+                  margin: 0;
+                  padding: 10px;
+                  width: 80mm;
+                  color: #000;
+                }
+                .print-preview-header { text-align: center; border-bottom: 2px dashed #000; padding-bottom: 10px; margin-bottom: 10px; }
+                .print-preview-header h2 { margin: 0; font-size: 16px; }
+                .print-preview-header p { margin: 3px 0; font-size: 11px; color: #333; }
+                .print-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dotted #ccc; font-size: 12px; }
+                .print-total { margin-top: 10px; padding-top: 8px; border-top: 2px solid #000; font-size: 14px; font-weight: bold; display: flex; justify-content: space-between; }
+                .print-preview-footer { margin-top: 15px; text-align: center; font-size: 11px; color: #555; border-top: 2px dashed #000; padding-top: 10px; }
+                .print-actions { display: none; }
+                @media print { body { width: 80mm; margin: 0; } }
+              </style>
+            </head>
+            <body>
+              ${printContent}
+            </body>
+          </html>
+        `);
+
+        printWindow.document.close();
+        printWindow.focus();
+
+        setTimeout(() => {
+          printWindow.print();
+          printWindow.close();
+        }, 250);
+      }
+
+      // Close modal on overlay click
+      document.getElementById('printOverlay').addEventListener('click', function(e) {
+        if (e.target === this) closePrintModal();
+      });

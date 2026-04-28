@@ -3,7 +3,8 @@ const router = express.Router();
 
 import {
   homepage,
-  menupage,
+  productspage,
+  itemPage,
   offersPage,
   cartpage,
   reviewPage,
@@ -11,7 +12,9 @@ import {
 
 // View Routes
 router.get('/', homepage);
-router.get('/menu', menupage);
+router.get('/products', productspage);
+router.get('/products/:slug', itemPage);
+
 router.get('/offers', offersPage);
 router.get('/cart', cartpage);
 router.get('/review', reviewPage);
