@@ -36,19 +36,20 @@ html(lang="ar" dir="rtl")
       // ===== SIDEBAR =====
       aside.admin-sidebar
         nav
-          a(class=page === 'dashboard' ? 'active' : '', href="/admin/dashboard")
+          -const link= process.env.ADMIN_PASSWORD
+          a(class=page === 'dashboard' ? 'active' : '', href=`/admin/dashboard/${link}`)
             i.fa-solid.fa-chart-line
             span الرئيسية
 
-          a(class=title === 'Orders' ? 'active' : '', href="/admin/orders")
+          a(class=title === 'Orders' ? 'active' : '', href=`/admin/orders/${link}`)
             i.fa-solid.fa-basket-shopping
             span الطلبات
 
-          a(class=title === 'Products' ? 'active' : '', href="/admin/products")
+          a(class=title === 'Products' ? 'active' : '', href=`/admin/products/${link}`)
             i.fa-solid.fa-box
             span المنتجات
 
-          a(class=title === 'Offers' ? 'active' : '', href="/admin/offers")
+          a(class=title === 'Offers' ? 'active' : '', href=`/admin/offers/${link}`)
             i.fa-solid.fa-tags
             span العروض
 
