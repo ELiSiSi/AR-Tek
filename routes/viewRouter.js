@@ -11,7 +11,8 @@ import {
 } from '../controller/viewController.js';
 
 // View Routes
-router.get('/', homepage);
+router.get('/home', homepage);
+router.get('/', productspage);
 router.get('/products', productspage);
 router.get('/products/:slug', itemPage);
 
