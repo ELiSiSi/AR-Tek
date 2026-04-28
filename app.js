@@ -155,14 +155,11 @@ process.on('uncaughtException', (err) => {
 
 //-----------------------------------------------------------------------------------------
 mongoose
-  .connect(MONGO_URI)
+  .connect(process.env.MONGO_URI)
   .then(() => console.log('✅ Connected to MongoDB'))
-  .catch(err => console.error('❌ MongoDB Error:', err));
+  .catch((err) => console.error(err));
 
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(port, () => {
-    console.log(`🚀 App listening at http://localhost:${port}`);
-  });
-}
-
+app.listen(port, () => {
+  console.log(`🚀 Server running on port ${port}...`);
+});
 export default app;
