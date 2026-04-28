@@ -9,15 +9,16 @@ import Offer from '../models/offerModel.js';
 export const homepage = async (req, res, next) => {
   try {
     const products = await Product.find();
+
     res.status(200).render('home', {
       products,
       title: 'Home',
     });
   } catch (err) {
-    return next(new AppError('No document found with that ID', 404));
+    console.error(err);
+    return next(err);
   }
 };
-
 //  productspage -----------------------------------------------------------------------------------
 export const productspage = async (req, res, next) => {
   try {
