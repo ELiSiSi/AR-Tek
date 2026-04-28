@@ -76,7 +76,14 @@ console.log('VIEWS PATH 👉', app.get('views'));
 
 // تحميل أسرع للصفحات استهلاك إنترنت أقل
 app.use(compression());
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log('✅ Connected to MongoDB'))
+  .catch((err) => console.error(err));
 
+app.listen(port, () => {
+  console.log(`🚀 Server running on port ${port}...`);
+});
 //--------------------------------------------------------------------------------------------
 // =================================== The Routes ============================================
 //--------------------------------------------------------------------------------------------
@@ -154,12 +161,5 @@ process.on('uncaughtException', (err) => {
 });
 
 //-----------------------------------------------------------------------------------------
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log('✅ Connected to MongoDB'))
-  .catch((err) => console.error(err));
 
-app.listen(port, () => {
-  console.log(`🚀 Server running on port ${port}...`);
-});
 export default app;
